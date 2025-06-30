@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 
 export default function EventModalButton() {
     const [modalOpen, setModalOpen] = useState(false);
-    const [isPending, startTransition] = useTransition();
+    const [isPending] = useTransition();
     const router = useRouter();
 
     async function handleEventCreate(formData: FormData) {
