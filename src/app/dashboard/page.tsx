@@ -27,15 +27,19 @@ export default async function DashboardPage() {
         const result = await client.query<Event>('SELECT * FROM events ORDER BY created_at DESC');
         events = result.rows;
         await client.end();
-    } catch (err: any) {
-        console.error('DashboardPage error:', {
-            message: err?.message,
-            stack: err?.stack,
-            code: err?.code,
-            detail: err?.detail,
-            hint: err?.hint,
-            err
-        });
+    } catch (err: unknown) {
+        if (typeof err === 'object' && err !== null) {
+            console.error('DashboardPage error:', {
+                message: (err as { message?: string }).message,
+                stack: (err as { stack?: string }).stack,
+                code: (err as { code?: string }).code,
+                detail: (err as { detail?: string }).detail,
+                hint: (err as { hint?: string }).hint,
+                err
+            });
+        } else {
+            console.error('DashboardPage error:', err);
+        }
     }
 
     return (
