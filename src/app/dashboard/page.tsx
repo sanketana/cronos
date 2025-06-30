@@ -49,17 +49,17 @@ export default async function DashboardPage() {
                 <div>No events found or error loading events. Check server logs for details.</div>
             ) : (
                 <ul className="space-y-2">
-                    {events.map(event => {
-                        let dateStr = '';
-                        let createdAtStr = '';
+                    {events.map((event: Event) => {
+                        let dateStr: string = '';
+                        let createdAtStr: string = '';
                         try {
-                            const dateObj = new Date((event.date ?? '') as string | number | Date);
+                            const dateObj = new Date(event.date ?? '');
                             dateStr = isNaN(dateObj.getTime()) ? String(event.date) : dateObj.toISOString().slice(0, 10);
                         } catch {
                             dateStr = String(event.date);
                         }
                         try {
-                            const createdAtObj = new Date((event.created_at ?? '') as string | number | Date);
+                            const createdAtObj = new Date(event.created_at ?? '');
                             createdAtStr = isNaN(createdAtObj.getTime()) ? String(event.created_at) : createdAtObj.toLocaleString();
                         } catch {
                             createdAtStr = String(event.created_at);
