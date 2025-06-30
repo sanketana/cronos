@@ -10,7 +10,7 @@ export async function createEvent(formData: FormData) {
   if (!name || !date || !slotLen || !status) {
     throw new Error('Missing required fields');
   }
-  const client = new Client({ connectionString: process.env.POSTGRES_URL });
+  const client = new Client({ connectionString: process.env.NEON_POSTGRES_URL });
   await client.connect();
   await client.query(
     'INSERT INTO events (name, date, slot_len, status) VALUES ($1, $2, $3, $4)',
