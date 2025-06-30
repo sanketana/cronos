@@ -22,7 +22,11 @@ export default async function DashboardPage() {
 
     let events: Event[] = [];
     try {
-        const client = new Client({ connectionString: process.env.POSTGRES_URL });
+        // For Neon/managed Postgres: accept self-signed certs
+        const client = new Client({
+            connectionString: process.env.POSTGRES_URL,
+            ssl: { rejectUnauthorized: false }
+        });
         await client.connect();
         const result = await client.query<Event>('SELECT * FROM events ORDER BY created_at DESC');
         events = result.rows;
