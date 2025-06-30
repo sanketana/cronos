@@ -24,7 +24,7 @@ export default async function DashboardPage() {
     try {
         // For Neon/managed Postgres: accept self-signed certs
         const client = new Client({
-            connectionString: process.env.POSTGRES_URL,
+            connectionString: process.env.NEON_POSTGRES_URL,
             ssl: { rejectUnauthorized: false }
         });
         await client.connect();
