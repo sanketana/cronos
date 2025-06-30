@@ -14,7 +14,7 @@ interface Event {
 
 export default async function DashboardPage() {
     // Server-side session check
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const session = cookieStore.get('chronos_session');
     if (!session) {
         redirect('/login');
