@@ -53,13 +53,13 @@ export default async function DashboardPage() {
                         let dateStr = '';
                         let createdAtStr = '';
                         try {
-                            const dateObj = new Date(event.date as any);
+                            const dateObj = new Date((event.date ?? '') as string | number | Date);
                             dateStr = isNaN(dateObj.getTime()) ? String(event.date) : dateObj.toISOString().slice(0, 10);
                         } catch {
                             dateStr = String(event.date);
                         }
                         try {
-                            const createdAtObj = new Date(event.created_at as any);
+                            const createdAtObj = new Date((event.created_at ?? '') as string | number | Date);
                             createdAtStr = isNaN(createdAtObj.getTime()) ? String(event.created_at) : createdAtObj.toLocaleString();
                         } catch {
                             createdAtStr = String(event.created_at);
