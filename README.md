@@ -34,3 +34,13 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Event Backend Integration
+
+- Events are managed via a RESTful API at `/api/events`.
+- **GET /api/events**: Returns a list of all events (for the admin dashboard).
+- **POST /api/events**: Creates a new event. The request body should include `name`, `date`, `slotLen`, and `status`.
+- Uses [@vercel/postgres](https://vercel.com/docs/storage/vercel-postgres/quickstart) for database access.
+- The dashboard fetches and displays events, and updates the list immediately after a new event is created.
+
+**Note:** Ensure your Vercel Postgres database has an `events` table with columns: `id` (UUID, PK), `name` (text), `date` (date), `slot_len` (integer), `status` (text), `created_at` (timestamp, default now()).
