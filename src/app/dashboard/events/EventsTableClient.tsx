@@ -57,13 +57,13 @@ export default function EventsTableClient({ events }: { events: Event[] }) {
                             let createdAtStr = '';
                             try {
                                 const dateObj = new Date(event.date ?? '');
-                                dateStr = isNaN(dateObj.getTime()) ? String(event.date) : dateObj.toLocaleDateString();
+                                dateStr = isNaN(dateObj.getTime()) ? String(event.date) : dateObj.toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' });
                             } catch {
                                 dateStr = String(event.date);
                             }
                             try {
                                 const createdAtObj = new Date(event.created_at ?? '');
-                                createdAtStr = isNaN(createdAtObj.getTime()) ? String(event.created_at) : createdAtObj.toLocaleString();
+                                createdAtStr = isNaN(createdAtObj.getTime()) ? String(event.created_at) : createdAtObj.toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
                             } catch {
                                 createdAtStr = String(event.created_at);
                             }

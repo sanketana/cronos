@@ -9,21 +9,21 @@ async function getStats() {
     if (!session) {
         redirect('/login');
     }
-    const stats = { events: 0, professors: 0, students: 0, meetings: 0 };
+    const stats = { events: 0, faculty: 0, students: 0, meetings: 0 };
     try {
         const client = new Client({
             connectionString: process.env.NEON_POSTGRES_URL,
             ssl: { rejectUnauthorized: false }
         });
         await client.connect();
-        const [events, professors, students, meetings] = await Promise.all([
+        const [events, faculty, students, meetings] = await Promise.all([
             client.query('SELECT COUNT(*) FROM events'),
-            client.query("SELECT COUNT(*) FROM users WHERE role = 'professor'"),
+            client.query("SELECT COUNT(*) FROM users WHERE role = 'faculty'"),
             client.query("SELECT COUNT(*) FROM users WHERE role = 'student'"),
             client.query('SELECT COUNT(*) FROM meetings'),
         ]);
         stats.events = Number(events.rows[0].count);
-        stats.professors = Number(professors.rows[0].count);
+        stats.faculty = Number(faculty.rows[0].count);
         stats.students = Number(students.rows[0].count);
         stats.meetings = Number(meetings.rows[0].count);
         await client.end();
@@ -52,15 +52,15 @@ export default async function DashboardPage() {
                     <div className="stat-value">{stats.events}</div>
                 </div>
                 <div className="dashboard-stat-card">
-                    <span className="stat-icon" aria-label="Professors">
+                    <span className="stat-icon" aria-label="Faculty">
                         <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                             <path d="M3 8l9-4 9 4-9 4-9-4z" fill="#E4E0EE" stroke="#4E2A84" strokeWidth="1.5" />
                             <path d="M12 12v8" stroke="#4E2A84" strokeWidth="1.5" />
                             <path d="M7 16c0-1.657 2.239-3 5-3s5 1.343 5 3" stroke="#4E2A84" strokeWidth="1.5" />
                         </svg>
                     </span>
-                    <div className="stat-label">Professors</div>
-                    <div className="stat-value">{stats.professors}</div>
+                    <div className="stat-label">Faculty</div>
+                    <div className="stat-value">{stats.faculty}</div>
                 </div>
                 <div className="dashboard-stat-card">
                     <span className="stat-icon" aria-label="Students">

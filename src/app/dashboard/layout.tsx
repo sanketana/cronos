@@ -5,7 +5,7 @@ import './dashboard-sidebar.css';
 const sidebarItems = [
     { label: 'Dashboard Home', href: '/dashboard' },
     { label: 'Events', href: '/dashboard/events' },
-    { label: 'Professors', href: '/dashboard/professors' },
+    { label: 'Faculty', href: '/dashboard/faculty' },
     { label: 'Students', href: '/dashboard/students' },
     { label: 'Schedules', href: '/dashboard/schedules' },
     { label: 'Forms & Links', href: '/dashboard/forms' },
