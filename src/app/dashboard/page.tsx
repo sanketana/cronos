@@ -2,16 +2,6 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Client } from 'pg';
 import React from 'react';
-import EventModalButton from './EventModalButton';
-
-interface Event {
-    id: string;
-    name: string;
-    date: string;
-    slot_len: number;
-    status: string;
-    created_at: string;
-}
 
 async function getStats() {
     const cookieStore = await cookies();
@@ -19,7 +9,7 @@ async function getStats() {
     if (!session) {
         redirect('/login');
     }
-    let stats = { events: 0, professors: 0, students: 0, meetings: 0 };
+    const stats = { events: 0, professors: 0, students: 0, meetings: 0 };
     try {
         const client = new Client({
             connectionString: process.env.NEON_POSTGRES_URL,
