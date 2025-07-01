@@ -4,7 +4,16 @@ import EventModal from './EventModal';
 import { createEvent, updateEvent } from './actions';
 import { useRouter } from 'next/navigation';
 
-export default function EventModalButton({ event }: { event?: any }) {
+interface Event {
+    id?: string;
+    name: string;
+    date: string;
+    slot_len: number;
+    status: string;
+    created_at?: string;
+}
+
+export default function EventModalButton({ event }: { event?: Event }) {
     const [modalOpen, setModalOpen] = useState(false);
     const [isPending] = useTransition();
     const router = useRouter();

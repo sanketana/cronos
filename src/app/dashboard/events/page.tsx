@@ -1,8 +1,6 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Client } from 'pg';
-import EventModalButton from '../EventModalButton';
-import DeleteEventButton from './DeleteEventButton';
 import React from 'react';
 import EventsTableClient from './EventsTableClient';
 
