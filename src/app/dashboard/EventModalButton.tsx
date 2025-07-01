@@ -1,34 +1,39 @@
 "use client";
 import { useState, useTransition } from 'react';
 import EventModal from './EventModal';
-import { createEvent } from './actions';
+import { createEvent, updateEvent } from './actions';
 import { useRouter } from 'next/navigation';
 
-export default function EventModalButton() {
+export default function EventModalButton({ event }: { event?: any }) {
     const [modalOpen, setModalOpen] = useState(false);
     const [isPending] = useTransition();
     const router = useRouter();
 
-    async function handleEventCreate(formData: FormData) {
-        await createEvent(formData);
+    async function handleEventSubmit(formData: FormData) {
+        if (event) {
+            await updateEvent(formData);
+        } else {
+            await createEvent(formData);
+        }
         setModalOpen(false);
-        // Refresh the dashboard to show the new event
         router.refresh();
     }
 
     return (
         <>
             <button
-                className="mb-8 px-6 py-2 rounded bg-northwestern-purple text-white font-semibold hover:bg-blue-700 transition-colors"
+                className={event ? "secondary-btn" : "event-modal-btn"}
                 onClick={() => setModalOpen(true)}
                 disabled={isPending}
             >
-                + Create New Event
+                {event ? "Edit" : "+ Create New Event"}
             </button>
             <EventModal
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}
-                onSubmit={handleEventCreate}
+                onSubmit={handleEventSubmit}
+                initialValues={event}
+                submitLabel={event ? "Update" : "Create"}
             />
         </>
     );

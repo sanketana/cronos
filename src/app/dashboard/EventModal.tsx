@@ -5,9 +5,17 @@ interface EventModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (formData: FormData) => void | Promise<void>;
+    initialValues?: {
+        id?: string;
+        name: string;
+        date: string;
+        slot_len: number;
+        status: string;
+    };
+    submitLabel?: string;
 }
 
-export default function EventModal({ isOpen, onClose, onSubmit }: EventModalProps) {
+export default function EventModal({ isOpen, onClose, onSubmit, initialValues, submitLabel = "Create" }: EventModalProps) {
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -21,42 +29,42 @@ export default function EventModal({ isOpen, onClose, onSubmit }: EventModalProp
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
+        if (initialValues?.id) {
+            formData.set('id', initialValues.id);
+        }
         await onSubmit(formData);
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div
-                ref={ref}
-                tabIndex={-1}
-                className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 w-full max-w-md outline-none"
-                aria-modal="true"
-                role="dialog"
-            >
-                <h2 className="text-2xl font-bold mb-4 text-northwestern-purple dark:text-northwestern-purple">Create New Event</h2>
+        <div className="modal-overlay">
+            <div className="modal">
+                <h2 className="modal-title">{submitLabel} Event</h2>
                 <form onSubmit={handleSubmit}>
-                    <div className="mb-4">
-                        <label htmlFor="name" className="block mb-1 font-semibold">Event Name</label>
+                    {initialValues?.id && <input type="hidden" name="id" value={initialValues.id} />}
+                    <div className="form-group">
+                        <label htmlFor="name" className="form-label">Event Name</label>
                         <input
                             id="name"
                             name="name"
                             type="text"
+                            className="form-input"
                             required
-                            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-northwestern-purple bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                            defaultValue={initialValues?.name || ''}
                         />
                     </div>
-                    <div className="mb-4">
-                        <label htmlFor="date" className="block mb-1 font-semibold">Event Date</label>
+                    <div className="form-group">
+                        <label htmlFor="date" className="form-label">Event Date</label>
                         <input
                             id="date"
                             name="date"
                             type="date"
+                            className="form-input"
                             required
-                            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-northwestern-purple bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                            defaultValue={initialValues?.date || ''}
                         />
                     </div>
-                    <div className="mb-4">
-                        <label htmlFor="slotLen" className="block mb-1 font-semibold">Slot Length (minutes)</label>
+                    <div className="form-group">
+                        <label htmlFor="slotLen" className="form-label">Slot Length (minutes)</label>
                         <input
                             id="slotLen"
                             name="slotLen"
@@ -64,18 +72,19 @@ export default function EventModal({ isOpen, onClose, onSubmit }: EventModalProp
                             min={15}
                             max={120}
                             step={15}
-                            defaultValue={30}
+                            defaultValue={initialValues?.slot_len || 30}
+                            className="form-input"
                             required
-                            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-northwestern-purple bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                         />
                     </div>
-                    <div className="mb-6">
-                        <label htmlFor="status" className="block mb-1 font-semibold">Status</label>
+                    <div className="form-group">
+                        <label htmlFor="status" className="form-label">Status</label>
                         <select
                             id="status"
                             name="status"
-                            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-northwestern-purple bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                            defaultValue="CREATED"
+                            className="form-input"
+                            defaultValue={initialValues?.status || 'CREATED'}
+                            required
                         >
                             <option value="CREATED">CREATED</option>
                             <option value="COLLECTING_AVAIL">COLLECTING_AVAIL</option>
@@ -83,19 +92,19 @@ export default function EventModal({ isOpen, onClose, onSubmit }: EventModalProp
                             <option value="PUBLISHED">PUBLISHED</option>
                         </select>
                     </div>
-                    <div className="flex justify-end gap-2">
+                    <div className="modal-actions">
                         <button
                             type="button"
+                            className="secondary-btn"
                             onClick={onClose}
-                            className="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            className="px-4 py-2 rounded bg-northwestern-purple text-white font-semibold hover:bg-blue-700 transition-colors"
+                            className="primary-btn"
                         >
-                            Create
+                            {submitLabel}
                         </button>
                     </div>
                 </form>

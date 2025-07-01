@@ -1,4 +1,4 @@
-import './globals.css';
+import './northwestern-colors.css';
 import { Inter } from 'next/font/google';
 import React from 'react';
 

@@ -1,19 +1,36 @@
 import React from 'react';
+import Link from 'next/link';
+import './dashboard-sidebar.css';
+
+const sidebarItems = [
+    { label: 'Dashboard Home', href: '/dashboard' },
+    { label: 'Events', href: '/dashboard/events' },
+    { label: 'Professors', href: '/dashboard/professors' },
+    { label: 'Students', href: '/dashboard/students' },
+    { label: 'Schedules', href: '/dashboard/schedules' },
+    { label: 'Forms & Links', href: '/dashboard/forms' },
+    { label: 'Settings', href: '/dashboard/settings' },
+];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     return (
-        <div>
-            <nav className="w-full flex justify-end p-4 bg-northwestern-purple">
-                <form method="POST" action="/logout">
-                    <button
-                        type="submit"
-                        className="bg-northwestern-dark text-white px-4 py-2 rounded hover:bg-northwestern-accent transition-colors font-semibold"
-                    >
-                        Logout
-                    </button>
+        <div className="dashboard-layout">
+            <nav className="dashboard-sidebar" aria-label="Dashboard navigation">
+                <div className="sidebar-title">Chronos</div>
+                <ul className="sidebar-list">
+                    {sidebarItems.map(item => (
+                        <li key={item.href} className="sidebar-list-item">
+                            <Link href={item.href} className="sidebar-link">{item.label}</Link>
+                        </li>
+                    ))}
+                </ul>
+                <form method="POST" action="/logout" className="sidebar-logout-form">
+                    <button type="submit" className="sidebar-logout-btn">Logout</button>
                 </form>
             </nav>
-            <main>{children}</main>
+            <main className="dashboard-main">
+                {children}
+            </main>
         </div>
     );
 } 
