@@ -29,8 +29,12 @@ export default function AddEditFacultyModal({ isOpen, onClose, onSubmit, initial
             await onSubmit(formData);
             setLoading(false);
             onClose();
-        } catch (err: any) {
-            setError(err.message || 'Failed to save faculty');
+        } catch (err) {
+            if (err instanceof Error) {
+                setError(err.message || 'Failed to save faculty');
+            } else {
+                setError('Failed to save faculty');
+            }
             setLoading(false);
         }
     }

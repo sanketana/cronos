@@ -17,7 +17,7 @@ export default function StudentsTableClient({ students }: { students: Student[] 
     const [isModalOpen, setModalOpen] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [editStudent, setEditStudent] = useState<Student | null>(null);
-    const [isPending, startTransition] = useTransition();
+    const [, startTransition] = useTransition();
     const router = useRouter();
 
     function handleAddClick() {

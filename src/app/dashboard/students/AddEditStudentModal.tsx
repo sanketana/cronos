@@ -29,8 +29,12 @@ export default function AddEditStudentModal({ isOpen, onClose, onSubmit, initial
             await onSubmit(formData);
             setLoading(false);
             onClose();
-        } catch (err: any) {
-            setError(err.message || 'Failed to save student');
+        } catch (err) {
+            if (err instanceof Error) {
+                setError(err.message || 'Failed to save student');
+            } else {
+                setError('Failed to save student');
+            }
             setLoading(false);
         }
     }

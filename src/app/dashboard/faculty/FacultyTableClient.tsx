@@ -17,7 +17,7 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
     const [isModalOpen, setModalOpen] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [editFaculty, setEditFaculty] = useState<Faculty | null>(null);
-    const [isPending, startTransition] = useTransition();
+    const [, startTransition] = useTransition();
     const router = useRouter();
 
     function handleAddClick() {
