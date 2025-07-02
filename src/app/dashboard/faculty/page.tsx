@@ -1,8 +1,10 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Client } from 'pg';
-import React from 'react';
 import FacultyTableClient from './FacultyTableClient';
+import AvailabilitiesTableClient from './AvailabilitiesTableClient';
+import { getAllAvailabilities } from './actions';
+import FacultyTabsClient from './FacultyTabsClient';
 
 interface Faculty {
     id: string;
@@ -44,10 +46,6 @@ async function getFacultyWithAuth() {
 
 export default async function FacultyPage() {
     const faculty = await getFacultyWithAuth();
-    return (
-        <div>
-            <h1 className="dashboard-title">Faculty</h1>
-            <FacultyTableClient faculty={faculty} />
-        </div>
-    );
+    const availabilities = await getAllAvailabilities();
+    return <FacultyTabsClient faculty={faculty} availabilities={availabilities} />;
 } 

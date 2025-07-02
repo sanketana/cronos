@@ -46,4 +46,12 @@ export async function updateEvent(formData: FormData) {
   );
   await client.end();
   revalidatePath('/dashboard/events');
+}
+
+export async function getAllEvents() {
+  const client = new Client({ connectionString: process.env.NEON_POSTGRES_URL });
+  await client.connect();
+  const result = await client.query('SELECT id, name, date, status FROM events ORDER BY date DESC');
+  await client.end();
+  return result.rows;
 } 

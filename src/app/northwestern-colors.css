@@ -282,4 +282,77 @@ input, select, textarea {
 }
 .secondary-btn:hover {
   background: var(--northwestern-gray);
+}
+
+/* Responsive: Login Form, Modal, Dashboard */
+@media (max-width: 700px) {
+  .login-form {
+    padding: 1.25rem;
+    max-width: 95vw;
+  }
+  .centered-page {
+    padding: 1rem;
+  }
+  .modal {
+    padding: 1.25rem;
+    max-width: 95vw;
+  }
+  .dashboard-page {
+    padding: 1rem;
+  }
+  .dashboard-stats-row {
+    gap: 1rem;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .dashboard-stat-card {
+    padding: 1.25rem 1rem;
+    min-width: 0;
+    width: 100%;
+  }
+}
+@media (max-width: 480px) {
+  .login-title, .modal-title, .dashboard-title {
+    font-size: 1.25rem;
+  }
+  .login-form, .modal {
+    padding: 0.75rem;
+    border-radius: 6px;
+  }
+  .form-input {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.95rem;
+  }
+  .primary-btn, .secondary-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.95rem;
+  }
+  .dashboard-stat-card {
+    padding: 0.75rem 0.5rem;
+    border-radius: 6px;
+  }
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 1.5rem;
+}
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #4E2A84;
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.2s, background 0.2s;
+}
+.tab-btn[aria-selected="true"] {
+  border-bottom: 3px solid #4E2A84;
+  font-weight: bold;
+  background: #f3f0fa;
+}
+.tab-btn[aria-selected="false"]:hover {
+  background: #f3f0fa;
 } 

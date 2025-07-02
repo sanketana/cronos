@@ -3,6 +3,7 @@ import React, { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import AddEditFacultyModal from './AddEditFacultyModal';
 import { createFaculty, updateFaculty, deleteFaculty } from './actions';
+import UpdateAvailabilityModal from './UpdateAvailabilityModal';
 
 interface Faculty {
     id: string;
@@ -19,6 +20,8 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
     const [editFaculty, setEditFaculty] = useState<Faculty | null>(null);
     const [, startTransition] = useTransition();
     const router = useRouter();
+    const [isAvailabilityModalOpen, setAvailabilityModalOpen] = useState(false);
+    const [availabilityFaculty, setAvailabilityFaculty] = useState<Faculty | null>(null);
 
     function handleAddClick() {
         setEditFaculty(null);
@@ -54,6 +57,16 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
         });
     }
 
+    function handleUpdateAvailabilityClick(faculty: Faculty) {
+        setAvailabilityFaculty(faculty);
+        setAvailabilityModalOpen(true);
+    }
+
+    function handleAvailabilitySubmit(data: { eventId: string; slots: string; preferences: string }) {
+        // TODO: Call backend action
+        console.log('Availability submitted:', { faculty: availabilityFaculty, ...data });
+    }
+
     return (
         <div>
             <AddEditFacultyModal
@@ -62,6 +75,12 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
                 onSubmit={isEdit ? handleEdit : handleCreate}
                 initialValues={editFaculty || {}}
                 isEdit={isEdit}
+            />
+            <UpdateAvailabilityModal
+                isOpen={isAvailabilityModalOpen}
+                onClose={() => setAvailabilityModalOpen(false)}
+                faculty={availabilityFaculty || { id: '', name: '' }}
+                onSubmit={handleAvailabilitySubmit}
             />
             <button className="primary-btn mb-4" onClick={handleAddClick}>+ Create New Faculty</button>
             {faculty.length === 0 ? (
@@ -74,7 +93,6 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
                             <th>Email</th>
                             <th>Department</th>
                             <th>Status</th>
-                            <th>Created At</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -93,10 +111,27 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
                                     <td>{f.email}</td>
                                     <td>{f.department || '-'}</td>
                                     <td>{f.status}</td>
-                                    <td>{createdAtStr}</td>
                                     <td>
-                                        <button className="secondary-btn" style={{ marginRight: '0.5rem' }} onClick={() => handleEditClick(f)}>Edit</button>
-                                        <button className="danger-btn" onClick={() => handleDelete(f.id)}>Delete</button>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button
+                                                className="secondary-btn"
+                                                onClick={() => handleEditClick(f)}
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                className="secondary-btn"
+                                                onClick={() => handleUpdateAvailabilityClick(f)}
+                                            >
+                                                Availability
+                                            </button>
+                                            <button
+                                                className="danger-btn"
+                                                onClick={() => handleDelete(f.id)}
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             );

@@ -2,6 +2,7 @@
 import React, { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import AddEditStudentModal from './AddEditStudentModal';
+import UpdatePreferenceModal from './UpdatePreferenceModal';
 import { createStudent, updateStudent, deleteStudent } from './actions';
 
 interface Student {
@@ -17,6 +18,8 @@ export default function StudentsTableClient({ students }: { students: Student[] 
     const [isModalOpen, setModalOpen] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [editStudent, setEditStudent] = useState<Student | null>(null);
+    const [isPreferenceModalOpen, setPreferenceModalOpen] = useState(false);
+    const [preferenceStudent, setPreferenceStudent] = useState<Student | null>(null);
     const [, startTransition] = useTransition();
     const router = useRouter();
 
@@ -30,6 +33,11 @@ export default function StudentsTableClient({ students }: { students: Student[] 
         setEditStudent(student);
         setIsEdit(true);
         setModalOpen(true);
+    }
+
+    function handlePreferenceClick(student: Student) {
+        setPreferenceStudent(student);
+        setPreferenceModalOpen(true);
     }
 
     async function handleDelete(id: string) {
@@ -62,6 +70,11 @@ export default function StudentsTableClient({ students }: { students: Student[] 
                 onSubmit={isEdit ? handleEdit : handleCreate}
                 initialValues={editStudent || {}}
                 isEdit={isEdit}
+            />
+            <UpdatePreferenceModal
+                isOpen={isPreferenceModalOpen}
+                onClose={() => setPreferenceModalOpen(false)}
+                student={preferenceStudent || { id: '', name: '' }}
             />
             <button className="primary-btn mb-4" onClick={handleAddClick}>+ Create New Student</button>
             {students.length === 0 ? (
@@ -96,6 +109,7 @@ export default function StudentsTableClient({ students }: { students: Student[] 
                                     <td>{createdAtStr}</td>
                                     <td>
                                         <button className="secondary-btn" style={{ marginRight: '0.5rem' }} onClick={() => handleEditClick(s)}>Edit</button>
+                                        <button className="secondary-btn" style={{ marginRight: '0.5rem' }} onClick={() => handlePreferenceClick(s)}>Preference</button>
                                         <button className="danger-btn" onClick={() => handleDelete(s.id)}>Delete</button>
                                     </td>
                                 </tr>

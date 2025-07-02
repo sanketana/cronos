@@ -1,8 +1,8 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Client } from 'pg';
-import React from 'react';
-import StudentsTableClient from './StudentsTableClient';
+import StudentsTabsClient from './StudentsTabsClient';
+import { getAllPreferences } from './actions';
 
 interface Student {
     id: string;
@@ -42,12 +42,26 @@ async function getStudentsWithAuth() {
     return students;
 }
 
+async function getFaculty() {
+    let faculty: { id: string; name: string }[] = [];
+    try {
+        const client = new Client({
+            connectionString: process.env.NEON_POSTGRES_URL,
+            ssl: { rejectUnauthorized: false }
+        });
+        await client.connect();
+        const result = await client.query('SELECT id, name FROM users WHERE role = $1', ['faculty']);
+        faculty = result.rows;
+        await client.end();
+    } catch (err: unknown) {
+        console.error('getFaculty error:', err);
+    }
+    return faculty;
+}
+
 export default async function StudentsPage() {
     const students = await getStudentsWithAuth();
-    return (
-        <div>
-            <h1 className="dashboard-title">Students</h1>
-            <StudentsTableClient students={students} />
-        </div>
-    );
+    const preferences = await getAllPreferences();
+    const faculty = await getFaculty();
+    return <StudentsTabsClient students={students} preferences={preferences} faculty={faculty} />;
 } 

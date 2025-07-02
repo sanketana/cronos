@@ -1,4 +1,5 @@
-import React from 'react';
+"use client";
+import React, { useState } from 'react';
 import Link from 'next/link';
 import './dashboard-sidebar.css';
 
@@ -13,14 +14,35 @@ const sidebarItems = [
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     return (
         <div className="dashboard-layout">
-            <nav className="dashboard-sidebar" aria-label="Dashboard navigation">
+            {/* Burger menu button for mobile */}
+            <button
+                className="burger-menu-btn"
+                aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
+                aria-expanded={sidebarOpen}
+                aria-controls="dashboard-sidebar"
+                onClick={() => setSidebarOpen((open) => !open)}
+            >
+                {sidebarOpen ? (
+                    <span aria-hidden="true">&times;</span>
+                ) : (
+                    <span aria-hidden="true">&#9776;</span>
+                )}
+            </button>
+            {/* Sidebar overlay for mobile */}
+            {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} aria-hidden="true" />}
+            <nav
+                id="dashboard-sidebar"
+                className={`dashboard-sidebar${sidebarOpen ? ' open' : ''}`}
+                aria-label="Dashboard navigation"
+            >
                 <div className="sidebar-title">Chronos</div>
                 <ul className="sidebar-list">
                     {sidebarItems.map(item => (
                         <li key={item.href} className="sidebar-list-item">
-                            <Link href={item.href} className="sidebar-link">{item.label}</Link>
+                            <Link href={item.href} className="sidebar-link" onClick={() => setSidebarOpen(false)}>{item.label}</Link>
                         </li>
                     ))}
                 </ul>

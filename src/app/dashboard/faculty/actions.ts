@@ -46,4 +46,58 @@ export async function deleteFaculty(id: string) {
     await client.connect();
     await client.query('DELETE FROM users WHERE id = $1 AND role = $2', [id, 'faculty']);
     await client.end();
+}
+
+export async function upsertAvailability({ facultyId, eventId, slots, preferences }: { facultyId: string; eventId: string; slots: string; preferences: string }) {
+    if (!facultyId || !eventId || !slots) throw new Error('Missing required fields');
+    // Parse slots: '09:00 - 10:30, 13:00 - 14:30' => ["09:00 - 10:30", "13:00 - 14:30"]
+    const slotArr = slots.split(',').map(s => s.trim()).filter(Boolean);
+    const client = new Client({
+        connectionString: process.env.NEON_POSTGRES_URL,
+        ssl: { rejectUnauthorized: false }
+    });
+    await client.connect();
+    await client.query(
+        `INSERT INTO availabilities (faculty_id, event_id, available_slots, preferences, updated_at)
+         VALUES ($1, $2, $3, $4, NOW())
+         ON CONFLICT (faculty_id, event_id)
+         DO UPDATE SET available_slots = $3, preferences = $4, updated_at = NOW()`,
+        [facultyId, eventId, JSON.stringify(slotArr), preferences]
+    );
+    await client.end();
+}
+
+export async function getAllAvailabilities() {
+    const client = new Client({
+        connectionString: process.env.NEON_POSTGRES_URL,
+        ssl: { rejectUnauthorized: false }
+    });
+    await client.connect();
+    const result = await client.query(`
+        SELECT a.id, a.faculty_id, u.name as faculty_name, u.email as faculty_email, a.event_id, e.name as event_name, e.date as event_date, a.available_slots, a.preferences, a.updated_at
+        FROM availabilities a
+        JOIN users u ON a.faculty_id = u.id
+        JOIN events e ON a.event_id = e.id
+        ORDER BY a.updated_at DESC
+    `);
+    await client.end();
+    return result.rows;
+}
+
+export async function getAvailableFacultyForEvent(eventId: string) {
+    if (!eventId) throw new Error('Missing eventId');
+    const client = new Client({
+        connectionString: process.env.NEON_POSTGRES_URL,
+        ssl: { rejectUnauthorized: false }
+    });
+    await client.connect();
+    const result = await client.query(`
+        SELECT DISTINCT u.id, u.name
+        FROM availabilities a
+        JOIN users u ON a.faculty_id = u.id
+        WHERE a.event_id = $1
+        ORDER BY u.name ASC
+    `, [eventId]);
+    await client.end();
+    return result.rows;
 } 
