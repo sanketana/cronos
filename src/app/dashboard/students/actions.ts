@@ -48,7 +48,7 @@ export async function deleteStudent(id: string) {
     await client.end();
 }
 
-export async function upsertPreference({ studentId, eventId, professorIds, preferences }: { studentId: string; eventId: string; professorIds: string[]; preferences: string }) {
+export async function upsertPreference({ studentId, eventId, professorIds, preferences, unavailableSlots }: { studentId: string; eventId: string; professorIds: string[]; preferences: string; unavailableSlots: string[] }) {
     if (!studentId || !eventId || !professorIds || professorIds.length < 3 || professorIds.length > 5) throw new Error('Must select 3-5 professors');
     const client = new Client({
         connectionString: process.env.NEON_POSTGRES_URL,
@@ -56,11 +56,11 @@ export async function upsertPreference({ studentId, eventId, professorIds, prefe
     });
     await client.connect();
     await client.query(
-        `INSERT INTO preferences (student_id, event_id, professor_ids, preferences, updated_at)
-         VALUES ($1, $2, $3, $4, NOW())
+        `INSERT INTO preferences (student_id, event_id, professor_ids, preferences, unavailable_slots, updated_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())
          ON CONFLICT (student_id, event_id)
-         DO UPDATE SET professor_ids = $3, preferences = $4, updated_at = NOW()`,
-        [studentId, eventId, JSON.stringify(professorIds), preferences]
+         DO UPDATE SET professor_ids = $3, preferences = $4, unavailable_slots = $5, updated_at = NOW()`,
+        [studentId, eventId, JSON.stringify(professorIds), preferences, unavailableSlots]
     );
     await client.end();
 }
@@ -72,7 +72,7 @@ export async function getAllPreferences() {
     });
     await client.connect();
     const result = await client.query(`
-        SELECT p.id, p.student_id, s.name as student_name, s.email as student_email, p.event_id, e.name as event_name, e.date as event_date, p.professor_ids, p.preferences, p.updated_at
+        SELECT p.id, p.student_id, s.name as student_name, s.email as student_email, p.event_id, e.name as event_name, e.date as event_date, p.professor_ids, p.preferences, p.unavailable_slots, p.updated_at
         FROM preferences p
         JOIN users s ON p.student_id = s.id
         JOIN events e ON p.event_id = e.id

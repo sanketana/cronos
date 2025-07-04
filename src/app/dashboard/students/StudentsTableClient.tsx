@@ -87,26 +87,17 @@ export default function StudentsTableClient({ students }: { students: Student[] 
                             <th>Email</th>
                             <th>Department</th>
                             <th>Status</th>
-                            <th>Created At</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {students.map((s: Student) => {
-                            let createdAtStr = '';
-                            try {
-                                const createdAtObj = new Date(s.created_at ?? '');
-                                createdAtStr = isNaN(createdAtObj.getTime()) ? String(s.created_at) : createdAtObj.toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-                            } catch {
-                                createdAtStr = String(s.created_at);
-                            }
                             return (
                                 <tr key={s.id}>
                                     <td>{s.name}</td>
                                     <td>{s.email}</td>
                                     <td>{s.department || '-'}</td>
                                     <td>{s.status}</td>
-                                    <td>{createdAtStr}</td>
                                     <td>
                                         <button className="secondary-btn" style={{ marginRight: '0.5rem' }} onClick={() => handleEditClick(s)}>Edit</button>
                                         <button className="secondary-btn" style={{ marginRight: '0.5rem' }} onClick={() => handlePreferenceClick(s)}>Preference</button>

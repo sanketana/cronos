@@ -10,10 +10,10 @@ export async function POST(req: NextRequest) {
     const email = formData.get('email');
     const password = formData.get('password');
 
-    // Debug logs
-    console.log('ALL ENV:', process.env);
-    console.log('EMAIL:', email, 'ADMIN_EMAIL:', ADMIN_EMAIL);
-    console.log('PASSWORD:', password, 'ADMIN_PASSWORD:', ADMIN_PASSWORD);
+    // Debug logs (commented out)
+    // console.log('ALL ENV:', process.env);
+    // console.log('EMAIL:', email, 'ADMIN_EMAIL:', ADMIN_EMAIL);
+    // console.log('PASSWORD:', password, 'ADMIN_PASSWORD:', ADMIN_PASSWORD);
 
     if (
         typeof email !== 'string' ||
@@ -21,17 +21,17 @@ export async function POST(req: NextRequest) {
         !ADMIN_EMAIL ||
         !ADMIN_PASSWORD
     ) {
-        console.log('Invalid input or missing env vars');
+        // console.log('Invalid input or missing env vars');
         return NextResponse.redirect(new URL('/login?error=invalid', req.nextUrl.origin), { status: 302 });
     }
 
     if (email !== ADMIN_EMAIL) {
-        console.log('Email does not match');
+        // console.log('Email does not match');
         return NextResponse.redirect(new URL('/login?error=invalid', req.nextUrl.origin), { status: 302 });
     }
 
     if (password !== ADMIN_PASSWORD) {
-        console.log('Password does not match');
+        // console.log('Password does not match');
         return NextResponse.redirect(new URL('/login?error=invalid', req.nextUrl.origin), { status: 302 });
     }
 

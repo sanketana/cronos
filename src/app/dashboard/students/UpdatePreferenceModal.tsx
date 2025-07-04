@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { getAllEvents } from "../actions";
 import { upsertPreference } from "./actions";
 import { getAvailableFacultyForEvent } from "../faculty/actions";
+import { getAllPreferences } from "./actions";
 
 interface Props {
     isOpen: boolean;
@@ -14,10 +15,14 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
     const [eventId, setEventId] = useState("");
     const [professors, setProfessors] = useState<{ id: string; name: string }[]>([]);
     const [professorChoices, setProfessorChoices] = useState<(string | null)[]>([null, null, null, null, null]);
-    const [events, setEvents] = useState<{ id: string; name: string; date: string }[]>([]);
+    const [events, setEvents] = useState<{ id: string; name: string; date: string; start_time: string; end_time: string; slot_len: number }[]>([]);
     const [notes, setNotes] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [allSlots, setAllSlots] = useState<string[]>([]);
+    const [selectedSlot, setSelectedSlot] = useState("");
+    const [unavailableSlots, setUnavailableSlots] = useState<string[]>([]);
+    const [studentPrefs, setStudentPrefs] = useState<Record<string, string[]>>({});
 
     useEffect(() => {
         async function fetchData() {
@@ -41,12 +46,71 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
         fetchAvailableFaculty();
     }, [eventId]);
 
+    // Helper to get time slots for an event
+    function getTimeSlots(start: string, end: string, slotLen: number): string[] {
+        const slots: string[] = [];
+        let [h, m] = start.split(":").map(Number);
+        let [eh, em] = end.split(":").map(Number);
+        let cur = h * 60 + m;
+        const endMin = eh * 60 + em;
+        while (cur + slotLen <= endMin) {
+            const sh = String(Math.floor(cur / 60)).padStart(2, "0");
+            const sm = String(cur % 60).padStart(2, "0");
+            const ehh = String(Math.floor((cur + slotLen) / 60)).padStart(2, "0");
+            const emm = String((cur + slotLen) % 60).padStart(2, "0");
+            slots.push(`${sh}:${sm}-${ehh}:${emm}`);
+            cur += slotLen;
+        }
+        return slots;
+    }
+
+    // Prefetch all preferences for this student when modal opens
+    useEffect(() => {
+        async function fetchPrefs() {
+            if (isOpen && student.id) {
+                const allPrefs = await getAllPreferences();
+                const prefMap: Record<string, string[]> = {};
+                for (const row of allPrefs) {
+                    if (row.student_id === student.id && row.unavailable_slots) {
+                        prefMap[row.event_id] = Array.isArray(row.unavailable_slots) ? row.unavailable_slots : [];
+                    }
+                }
+                setStudentPrefs(prefMap);
+            }
+        }
+        fetchPrefs();
+    }, [isOpen, student.id]);
+
+    // When event changes, set up slots and prefill unavailable slots
+    useEffect(() => {
+        if (!eventId) return;
+        const ev = events.find(e => e.id === eventId);
+        if (ev && ev.start_time && ev.end_time && ev.slot_len) {
+            setAllSlots(getTimeSlots(ev.start_time, ev.end_time, ev.slot_len));
+        } else {
+            setAllSlots([]);
+        }
+        setUnavailableSlots(studentPrefs[eventId] || []);
+        setSelectedSlot("");
+    }, [eventId, events, studentPrefs]);
+
     function handleProfessorChange(idx: number, value: string) {
         setProfessorChoices(prev => {
             const updated = [...prev];
             updated[idx] = value || null;
             return updated;
         });
+    }
+
+    function addSlot() {
+        if (selectedSlot && !unavailableSlots.includes(selectedSlot)) {
+            setUnavailableSlots(prev => [...prev, selectedSlot]);
+            setSelectedSlot("");
+        }
+    }
+
+    function removeSlot(slot: string) {
+        setUnavailableSlots(prev => prev.filter(s => s !== slot));
     }
 
     async function handleSubmit(e: React.FormEvent) {
@@ -62,15 +126,21 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
             return;
         }
         setLoading(true);
-        await upsertPreference({
-            studentId: student.id,
-            eventId,
-            professorIds: selected,
-            preferences: notes,
-        });
-        setLoading(false);
-        onClose();
-        window.location.reload();
+        try {
+            await upsertPreference({
+                studentId: student.id,
+                eventId,
+                professorIds: selected,
+                preferences: notes,
+                unavailableSlots,
+            });
+            setLoading(false);
+            onClose();
+            window.location.reload();
+        } catch (err: any) {
+            setLoading(false);
+            setError(err?.message || 'Failed to save. Please try again.');
+        }
     }
 
     if (!isOpen) return null;
@@ -116,6 +186,33 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
                             </div>
                         ))}
                         <div className="text-xs text-gray-500 mt-1">Select at least 3 professors. No duplicates allowed. Professors shown are only those available for the selected event.</div>
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">Unavailable Slots</label>
+                        <div className="flex flex-col md:flex-row md:items-end gap-2">
+                            <div className="flex-1">
+                                <select className="form-input rounded-md border-gray-300 focus:border-nw-purple focus:ring-nw-purple" value={selectedSlot} onChange={e => setSelectedSlot(e.target.value)}>
+                                    <option value="">Select Slot</option>
+                                    {allSlots.filter(slot => !unavailableSlots.includes(slot)).map(slot => (
+                                        <option key={slot} value={slot}>{slot}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <button type="button" className="primary-btn h-10 px-4 rounded-md" onClick={addSlot} disabled={!selectedSlot}>Add</button>
+                        </div>
+                        <div className="flex flex-col gap-2 mt-2 w-full">
+                            {unavailableSlots.length === 0 && <span className="text-xs text-gray-500">No slots selected</span>}
+                            {unavailableSlots.map(slot => (
+                                <span key={slot} className="flex items-center bg-red-100 text-red-800 rounded-full px-3 py-1 text-xs font-semibold shadow-sm w-fit">
+                                    {slot}
+                                    <button type="button" className="ml-2 bg-northwestern-purple hover:bg-northwestern-dark-purple text-white rounded-full p-0.5 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-northwestern-purple" onClick={() => removeSlot(slot)} aria-label={`Remove slot ${slot}`}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </span>
+                            ))}
+                        </div>
                     </div>
                     <div className="form-group">
                         <label className="form-label">Notes (optional)</label>
