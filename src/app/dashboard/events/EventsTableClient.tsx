@@ -13,6 +13,8 @@ interface Event {
     slot_len: number;
     status: string;
     created_at: string;
+    start_time?: string;
+    end_time?: string;
 }
 
 export default function EventsTableClient({ events }: { events: Event[] }) {
@@ -45,37 +47,35 @@ export default function EventsTableClient({ events }: { events: Event[] }) {
                         <tr>
                             <th>Name</th>
                             <th>Date</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
                             <th>Slot Length</th>
                             <th>Status</th>
-                            <th>Created At</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {events.map((event: Event) => {
                             let dateStr = '';
-                            let createdAtStr = '';
+                            let startTimeStr = event.start_time ? event.start_time.slice(0, 5) : '';
+                            let endTimeStr = event.end_time ? event.end_time.slice(0, 5) : '';
+                            let dateForEdit = (event.date && event.date.length >= 10) ? event.date.slice(0, 10) : '';
                             try {
                                 const dateObj = new Date(event.date ?? '');
                                 dateStr = isNaN(dateObj.getTime()) ? String(event.date) : dateObj.toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' });
                             } catch {
                                 dateStr = String(event.date);
                             }
-                            try {
-                                const createdAtObj = new Date(event.created_at ?? '');
-                                createdAtStr = isNaN(createdAtObj.getTime()) ? String(event.created_at) : createdAtObj.toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-                            } catch {
-                                createdAtStr = String(event.created_at);
-                            }
                             return (
                                 <tr key={event.id}>
                                     <td>{event.name}</td>
                                     <td>{dateStr}</td>
+                                    <td>{startTimeStr}</td>
+                                    <td>{endTimeStr}</td>
                                     <td>{event.slot_len} min</td>
                                     <td>{event.status}</td>
-                                    <td>{createdAtStr}</td>
                                     <td>
-                                        <button className="secondary-btn" style={{ marginRight: '0.5rem' }} onClick={() => setEditEvent(event)}>Edit</button>
+                                        <button className="secondary-btn" style={{ marginRight: '0.5rem' }} onClick={() => setEditEvent({ ...event, date: dateForEdit })}>Edit</button>
                                         <DeleteEventButton eventId={event.id} />
                                     </td>
                                 </tr>

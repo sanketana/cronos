@@ -48,23 +48,46 @@ export async function deleteFaculty(id: string) {
     await client.end();
 }
 
-export async function upsertAvailability({ facultyId, eventId, slots, preferences }: { facultyId: string; eventId: string; slots: string; preferences: string }) {
+export async function upsertAvailability({ facultyId, eventId, slots, preferences }: { facultyId: string; eventId: string; slots: string[]; preferences: string }) {
     if (!facultyId || !eventId || !slots) throw new Error('Missing required fields');
-    // Parse slots: '09:00 - 10:30, 13:00 - 14:30' => ["09:00 - 10:30", "13:00 - 14:30"]
-    const slotArr = slots.split(',').map(s => s.trim()).filter(Boolean);
+    // Merge overlapping/adjacent slots
+    const mergedSlots = mergeTimeRanges(slots);
     const client = new Client({
         connectionString: process.env.NEON_POSTGRES_URL,
         ssl: { rejectUnauthorized: false }
     });
     await client.connect();
     await client.query(
-        `INSERT INTO availabilities (faculty_id, event_id, available_slots, preferences, updated_at)
+        `INSERT INTO availabilities (faculty_id, event_id, unavailable_slots, preferences, updated_at)
          VALUES ($1, $2, $3, $4, NOW())
          ON CONFLICT (faculty_id, event_id)
-         DO UPDATE SET available_slots = $3, preferences = $4, updated_at = NOW()`,
-        [facultyId, eventId, JSON.stringify(slotArr), preferences]
+         DO UPDATE SET unavailable_slots = $3, preferences = $4, updated_at = NOW()`,
+        [facultyId, eventId, JSON.stringify(mergedSlots), preferences]
     );
     await client.end();
+}
+
+// Helper to merge overlapping/adjacent time ranges (e.g., ["09:00-09:30", "09:30-10:00"] => ["09:00-10:00"])
+function mergeTimeRanges(slots: string[]): string[] {
+    if (!slots.length) return [];
+    // Parse and sort slots
+    const ranges = slots.map(s => s.split('-')).map(([start, end]) => [start, end]);
+    ranges.sort((a, b) => a[0].localeCompare(b[0]));
+    const merged: [string, string][] = [];
+    for (const [start, end] of ranges) {
+        if (!merged.length) {
+            merged.push([start, end]);
+        } else {
+            const last = merged[merged.length - 1];
+            if (last[1] >= start) {
+                // Overlapping or adjacent
+                last[1] = end > last[1] ? end : last[1];
+            } else {
+                merged.push([start, end]);
+            }
+        }
+    }
+    return merged.map(([start, end]) => `${start}-${end}`);
 }
 
 export async function getAllAvailabilities() {
@@ -74,12 +97,27 @@ export async function getAllAvailabilities() {
     });
     await client.connect();
     const result = await client.query(`
-        SELECT a.id, a.faculty_id, u.name as faculty_name, u.email as faculty_email, a.event_id, e.name as event_name, e.date as event_date, a.available_slots, a.preferences, a.updated_at
+        SELECT a.id, a.faculty_id, u.name as faculty_name, u.email as faculty_email, a.event_id, e.name as event_name, COALESCE(e.date::text, '') as event_date, e.start_time, e.end_time, e.slot_len, a.unavailable_slots, a.preferences, a.updated_at
         FROM availabilities a
         JOIN users u ON a.faculty_id = u.id
         JOIN events e ON a.event_id = e.id
         ORDER BY a.updated_at DESC
     `);
+    await client.end();
+    return result.rows;
+}
+
+export async function getAllAvailabilitiesForFaculty(facultyId: string) {
+    if (!facultyId) throw new Error('Missing facultyId');
+    const client = new Client({
+        connectionString: process.env.NEON_POSTGRES_URL,
+        ssl: { rejectUnauthorized: false }
+    });
+    await client.connect();
+    const result = await client.query(
+        `SELECT event_id, unavailable_slots FROM availabilities WHERE faculty_id = $1`,
+        [facultyId]
+    );
     await client.end();
     return result.rows;
 }
@@ -100,4 +138,19 @@ export async function getAvailableFacultyForEvent(eventId: string) {
     `, [eventId]);
     await client.end();
     return result.rows;
+}
+
+export async function getAvailability(facultyId: string, eventId: string) {
+    if (!facultyId || !eventId) throw new Error('Missing facultyId or eventId');
+    const client = new Client({
+        connectionString: process.env.NEON_POSTGRES_URL,
+        ssl: { rejectUnauthorized: false }
+    });
+    await client.connect();
+    const result = await client.query(
+        `SELECT unavailable_slots, preferences, updated_at FROM availabilities WHERE faculty_id = $1 AND event_id = $2 LIMIT 1`,
+        [facultyId, eventId]
+    );
+    await client.end();
+    return result.rows[0] || null;
 } 

@@ -11,6 +11,8 @@ interface EventModalProps {
         date: string;
         slot_len: number;
         status: string;
+        start_time?: string;
+        end_time?: string;
     };
     submitLabel?: string;
 }
@@ -61,6 +63,28 @@ export default function EventModal({ isOpen, onClose, onSubmit, initialValues, s
                             className="form-input"
                             required
                             defaultValue={initialValues?.date || ''}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="start_time" className="form-label">Event Start Time</label>
+                        <input
+                            id="start_time"
+                            name="start_time"
+                            type="time"
+                            className="form-input"
+                            required
+                            defaultValue={initialValues?.start_time ? initialValues.start_time.slice(0, 5) : ''}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="end_time" className="form-label">Event End Time</label>
+                        <input
+                            id="end_time"
+                            name="end_time"
+                            type="time"
+                            className="form-input"
+                            required
+                            defaultValue={initialValues?.end_time ? initialValues.end_time.slice(0, 5) : ''}
                         />
                     </div>
                     <div className="form-group">
