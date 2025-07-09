@@ -1,27 +1,59 @@
-import React from 'react';
-import StudentsTabsClient from './StudentsTabsClient';
-import { getAllPreferences } from './actions';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { Client } from 'pg';
+import StudentsTabsClient from './StudentsTabsClient';
 
-async function getAllStudents() {
-    const client = new Client({ connectionString: process.env.NEON_POSTGRES_URL, ssl: { rejectUnauthorized: false } });
-    await client.connect();
-    const result = await client.query('SELECT id, name, email, department, status, created_at FROM users WHERE role = $1 ORDER BY created_at DESC', ['student']);
-    await client.end();
-    return result.rows;
+async function getSessionUser() {
+    const cookieStore = await cookies();
+    const session = cookieStore.get('chronos_session');
+    if (!session) return null;
+    try {
+        return JSON.parse(session.value);
+    } catch {
+        return null;
+    }
 }
 
-async function getAllFaculty() {
-    const client = new Client({ connectionString: process.env.NEON_POSTGRES_URL, ssl: { rejectUnauthorized: false } });
+async function getStudentData(user: any) {
+    const client = new Client({ connectionString: process.env.NEON_POSTGRES_URL });
     await client.connect();
-    const result = await client.query('SELECT id, name FROM users WHERE role = $1', ['faculty']);
+    let students = [];
+    let preferences = [];
+    let faculty = [];
+    if (user?.role === 'student') {
+        // Only fetch this student's data and preferences, with joins for names/emails
+        const studentRes = await client.query('SELECT * FROM users WHERE id = $1', [user.userId]);
+        students = studentRes.rows;
+        const prefRes = await client.query(`
+            SELECT p.*, u.name as student_name, u.email as student_email, e.name as event_name, e.date as event_date
+            FROM preferences p
+            LEFT JOIN users u ON p.student_id = u.id
+            LEFT JOIN events e ON p.event_id = e.id
+            WHERE p.student_id = $1
+        `, [user.userId]);
+        preferences = prefRes.rows;
+    } else {
+        // Admin: fetch all, with joins for names/emails
+        const studentRes = await client.query('SELECT * FROM users WHERE role = $1', ['student']);
+        students = studentRes.rows;
+        const prefRes = await client.query(`
+            SELECT p.*, u.name as student_name, u.email as student_email, e.name as event_name, e.date as event_date
+            FROM preferences p
+            LEFT JOIN users u ON p.student_id = u.id
+            LEFT JOIN events e ON p.event_id = e.id
+        `);
+        preferences = prefRes.rows;
+    }
+    // Faculty list for preferences modal
+    const facultyRes = await client.query('SELECT id, name FROM users WHERE role = $1', ['faculty']);
+    faculty = facultyRes.rows;
     await client.end();
-    return result.rows;
+    return { students, preferences, faculty };
 }
 
 export default async function StudentsDashboard() {
-    const students = await getAllStudents();
-    const preferences = await getAllPreferences();
-    const faculty = await getAllFaculty();
+    const user = await getSessionUser();
+    if (!user) redirect('/login');
+    const { students, preferences, faculty } = await getStudentData(user);
     return <StudentsTabsClient students={students} preferences={preferences} faculty={faculty} />;
 } 

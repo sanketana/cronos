@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useTransition } from 'react';
+import React, { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AddEditFacultyModal from './AddEditFacultyModal';
 import { createFaculty, updateFaculty, deleteFaculty } from './actions';
@@ -22,6 +22,21 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
     const router = useRouter();
     const [isAvailabilityModalOpen, setAvailabilityModalOpen] = useState(false);
     const [availabilityFaculty, setAvailabilityFaculty] = useState<Faculty | null>(null);
+    const [role, setRole] = useState<string | null>(null);
+
+    useEffect(() => {
+        async function fetchRole() {
+            try {
+                const res = await fetch('/api/auth/me');
+                if (!res.ok) throw new Error('Not authenticated');
+                const data = await res.json();
+                setRole(data.role);
+            } catch {
+                setRole(null);
+            }
+        }
+        fetchRole();
+    }, []);
 
     function handleAddClick() {
         setEditFaculty(null);
@@ -82,7 +97,9 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
                 faculty={availabilityFaculty || { id: '', name: '' }}
                 onSubmit={handleAvailabilitySubmit}
             />
-            <button className="primary-btn mb-4" onClick={handleAddClick}>+ Create New Faculty</button>
+            {role === 'admin' && (
+                <button className="primary-btn mb-4" onClick={handleAddClick}>+ Create New Faculty</button>
+            )}
             {faculty.length === 0 ? (
                 <div>No faculty found or error loading faculty. Check server logs for details.</div>
             ) : (
@@ -113,23 +130,14 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
                                     <td>{f.status}</td>
                                     <td>
                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                            <button
-                                                className="secondary-btn"
-                                                onClick={() => handleEditClick(f)}
-                                            >
-                                                Edit
-                                            </button>
-                                            <button
-                                                className="secondary-btn"
-                                                onClick={() => handleUpdateAvailabilityClick(f)}
-                                            >
+                                            {role === 'admin' && (
+                                                <>
+                                                    <button className="secondary-btn" onClick={() => handleEditClick(f)}>Edit</button>
+                                                    <button className="danger-btn" onClick={() => handleDelete(f.id)}>Delete</button>
+                                                </>
+                                            )}
+                                            <button className="secondary-btn" onClick={() => handleUpdateAvailabilityClick(f)}>
                                                 Availability
-                                            </button>
-                                            <button
-                                                className="danger-btn"
-                                                onClick={() => handleDelete(f.id)}
-                                            >
-                                                Delete
                                             </button>
                                         </div>
                                     </td>

@@ -1,21 +1,50 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import './dashboard-sidebar.css';
 
-const sidebarItems = [
-    { label: 'Dashboard Home', href: '/dashboard' },
-    { label: 'Events', href: '/dashboard/events' },
-    { label: 'Faculty', href: '/dashboard/faculty' },
-    { label: 'Students', href: '/dashboard/students' },
-    { label: 'Meetings', href: '/dashboard/meetings' },
-    { label: 'Scheduler', href: '/dashboard/scheduler' },
-    { label: 'Forms & Links', href: '/dashboard/forms' },
-    { label: 'Settings', href: '/dashboard/settings' },
+const allSidebarItems = [
+    { label: 'Dashboard Home', href: '/dashboard', roles: ['admin', 'faculty', 'student'] },
+    { label: 'Events', href: '/dashboard/events', roles: ['admin'] },
+    { label: 'Faculty', href: '/dashboard/faculty', roles: ['admin'] },
+    { label: 'Students', href: '/dashboard/students', roles: ['admin'] },
+    { label: 'Meetings', href: '/dashboard/meetings', roles: ['admin'] },
+    { label: 'Scheduler', href: '/dashboard/scheduler', roles: ['admin'] },
+    { label: 'Forms & Links', href: '/dashboard/forms', roles: ['admin'] },
+    { label: 'Settings', href: '/dashboard/settings', roles: ['admin'] },
+    // Self-serve links for faculty and students
+    { label: 'My Availability', href: '/dashboard/faculty', roles: ['faculty'] },
+    { label: 'My Preferences', href: '/dashboard/students', roles: ['student'] },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [role, setRole] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchRole() {
+            try {
+                const res = await fetch('/api/auth/me');
+                if (!res.ok) throw new Error('Not authenticated');
+                const data = await res.json();
+                setRole(data.role);
+            } catch {
+                setRole(null);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchRole();
+    }, []);
+
+    if (loading) {
+        return <div className="dashboard-layout"><main className="dashboard-main">Loading...</main></div>;
+    }
+
+    // Only show sidebar items for the user's role
+    const sidebarItems = allSidebarItems.filter(item => role && item.roles.includes(role));
+
     return (
         <div className="dashboard-layout">
             {/* Burger menu button for mobile */}

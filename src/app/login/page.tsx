@@ -1,24 +1,59 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-    const [error, setError] = useState(false);
+    const [error, setError] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
+    const router = useRouter();
 
     useEffect(() => {
         if (typeof window !== "undefined") {
             const params = new URLSearchParams(window.location.search);
-            setError(params.get("error") === "invalid");
+            if (params.get("error") === "invalid") setError("Invalid email or password. Please try again.");
         }
     }, []);
 
+    async function handleLogin(e: React.FormEvent) {
+        e.preventDefault();
+        setError("");
+        setLoading(true);
+        try {
+            const res = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setError(data.error || "Login failed");
+                setLoading(false);
+                return;
+            }
+            if (data.mustChangePassword) {
+                router.push("/set-password");
+            } else {
+                // Redirect based on role
+                if (data.role === "admin") router.push("/dashboard");
+                else if (data.role === "professor") router.push("/dashboard/faculty");
+                else if (data.role === "student") router.push("/dashboard/students");
+                else router.push("/dashboard");
+            }
+        } catch (err) {
+            setError("Login failed. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    }
+
     return (
         <div className="centered-page">
-            <form className="login-form" action="/login/auth" method="POST">
-                <h1 className="login-title">Chronos Admin Login</h1>
+            <form className="login-form" onSubmit={handleLogin}>
+                <h1 className="login-title">Chronos Login</h1>
                 {error && (
-                    <div className="error-message">Invalid email or password. Please try again.</div>
+                    <div className="error-message">{error}</div>
                 )}
                 <div className="form-group">
                     <label htmlFor="email" className="form-label">Email</label>
@@ -46,7 +81,7 @@ export default function LoginPage() {
                         autoComplete="current-password"
                     />
                 </div>
-                <button type="submit" className="primary-btn w-full">Login</button>
+                <button type="submit" className="primary-btn w-full" disabled={loading}>{loading ? "Logging in..." : "Login"}</button>
             </form>
         </div>
     );

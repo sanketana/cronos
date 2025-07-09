@@ -113,7 +113,11 @@ export default function PreferencesTableClient({ preferences, faculty }: { prefe
                                 <td>{p.student_name}</td>
                                 <td>{p.student_email}</td>
                                 <td>{p.event_name}</td>
-                                <td>{typeof p.event_date === 'string' ? p.event_date.slice(0, 10) : new Date(p.event_date).toISOString().slice(0, 10)}</td>
+                                <td>{
+                                    typeof p.event_date === 'string' && !isNaN(Date.parse(p.event_date))
+                                        ? p.event_date.slice(0, 10)
+                                        : '-'
+                                }</td>
                                 <td>{Array.isArray(p.professor_ids)
                                     ? p.professor_ids.map(id => facultyMap[id] || id).join(", ")
                                     : p.professor_ids}

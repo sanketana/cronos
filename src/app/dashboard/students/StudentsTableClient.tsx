@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useTransition } from 'react';
+import React, { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AddEditStudentModal from './AddEditStudentModal';
 import UpdatePreferenceModal from './UpdatePreferenceModal';
@@ -22,6 +22,21 @@ export default function StudentsTableClient({ students }: { students: Student[] 
     const [preferenceStudent, setPreferenceStudent] = useState<Student | null>(null);
     const [, startTransition] = useTransition();
     const router = useRouter();
+    const [role, setRole] = useState<string | null>(null);
+
+    useEffect(() => {
+        async function fetchRole() {
+            try {
+                const res = await fetch('/api/auth/me');
+                if (!res.ok) throw new Error('Not authenticated');
+                const data = await res.json();
+                setRole(data.role);
+            } catch {
+                setRole(null);
+            }
+        }
+        fetchRole();
+    }, []);
 
     function handleAddClick() {
         setEditStudent(null);
@@ -76,7 +91,9 @@ export default function StudentsTableClient({ students }: { students: Student[] 
                 onClose={() => setPreferenceModalOpen(false)}
                 student={preferenceStudent || { id: '', name: '' }}
             />
-            <button className="primary-btn mb-4" onClick={handleAddClick}>+ Create New Student</button>
+            {role === 'admin' && (
+                <button className="primary-btn mb-4" onClick={handleAddClick}>+ Create New Student</button>
+            )}
             {students.length === 0 ? (
                 <div>No students found or error loading students. Check server logs for details.</div>
             ) : (
@@ -99,9 +116,13 @@ export default function StudentsTableClient({ students }: { students: Student[] 
                                     <td>{s.department || '-'}</td>
                                     <td>{s.status}</td>
                                     <td>
-                                        <button className="secondary-btn" style={{ marginRight: '0.5rem' }} onClick={() => handleEditClick(s)}>Edit</button>
+                                        {role === 'admin' && (
+                                            <>
+                                                <button className="secondary-btn" style={{ marginRight: '0.5rem' }} onClick={() => handleEditClick(s)}>Edit</button>
+                                                <button className="danger-btn" onClick={() => handleDelete(s.id)}>Delete</button>
+                                            </>
+                                        )}
                                         <button className="secondary-btn" style={{ marginRight: '0.5rem' }} onClick={() => handlePreferenceClick(s)}>Preference</button>
-                                        <button className="danger-btn" onClick={() => handleDelete(s.id)}>Delete</button>
                                     </td>
                                 </tr>
                             );
