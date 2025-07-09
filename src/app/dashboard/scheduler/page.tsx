@@ -43,24 +43,30 @@ export default function SchedulerPage() {
         const availabilities = (window as any).__availabilities || [];
         const eventProfs = availabilities
             .filter((a: any) => a.event_id === selectedEvent)
-            .map((a: any) => ({
-                id: a.faculty_id,
-                name: a.faculty_name,
-                email: a.faculty_email,
-                department: a.faculty_department || "-",
-                unavailable_slots: a.unavailable_slots ? (typeof a.unavailable_slots === 'string' ? JSON.parse(a.unavailable_slots) : a.unavailable_slots) : [],
-            }));
+            .map((a: any) => {
+                console.log('Professor available_slots:', a.available_slots);
+                return {
+                    id: a.faculty_id,
+                    name: a.faculty_name,
+                    email: a.faculty_email,
+                    department: a.faculty_department || "-",
+                    available_slots: a.available_slots ? (typeof a.available_slots === 'string' ? JSON.parse(a.available_slots) : a.available_slots) : [],
+                };
+            });
         setProfessors(eventProfs);
         const preferences = (window as any).__preferences || [];
         const eventStudents = preferences
             .filter((p: any) => p.event_id === selectedEvent)
-            .map((p: any) => ({
-                id: p.student_id,
-                name: p.student_name,
-                email: p.student_email,
-                department: p.student_department || "-",
-                unavailable_slots: p.unavailable_slots ? (typeof p.unavailable_slots === 'string' ? JSON.parse(p.unavailable_slots) : p.unavailable_slots) : [],
-            }));
+            .map((p: any) => {
+                console.log('Student available_slots:', p.available_slots);
+                return {
+                    id: p.student_id,
+                    name: p.student_name,
+                    email: p.student_email,
+                    department: p.student_department || "-",
+                    available_slots: p.available_slots ? (typeof p.available_slots === 'string' ? JSON.parse(p.available_slots) : p.available_slots) : [],
+                };
+            });
         setStudents(eventStudents);
     }, [selectedEvent]);
 
@@ -154,7 +160,7 @@ export default function SchedulerPage() {
                                             <th>Name</th>
                                             <th>Email</th>
                                             <th>Department</th>
-                                            <th>Unavailable Slots</th>
+                                            <th>Available Slots</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -167,13 +173,9 @@ export default function SchedulerPage() {
                                                     <td>{p.email}</td>
                                                     <td>{p.department}</td>
                                                     <td>
-                                                        {p.unavailable_slots && p.unavailable_slots.length > 0 ? (
-                                                            <span className="text-xs text-red-800">
-                                                                {p.unavailable_slots.map(formatSlotRange).join(', ')}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-gray-400 text-sm">None</span>
-                                                        )}
+                                                        <span className="text-xs text-green-800 font-semibold">
+                                                            {Array.isArray(p.available_slots) ? p.available_slots.length : (p.available_slots ? JSON.parse(p.available_slots).length : 0)}
+                                                        </span>
                                                     </td>
                                                 </tr>
                                             ))
@@ -191,7 +193,7 @@ export default function SchedulerPage() {
                                             <th>Name</th>
                                             <th>Email</th>
                                             <th>Department</th>
-                                            <th>Unavailable Slots</th>
+                                            <th>Available Slots</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -204,13 +206,9 @@ export default function SchedulerPage() {
                                                     <td>{s.email}</td>
                                                     <td>{s.department}</td>
                                                     <td>
-                                                        {s.unavailable_slots && s.unavailable_slots.length > 0 ? (
-                                                            <span className="text-xs text-red-800">
-                                                                {s.unavailable_slots.map(formatSlotRange).join(', ')}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-gray-400 text-sm">None</span>
-                                                        )}
+                                                        <span className="text-xs text-green-800 font-semibold">
+                                                            {Array.isArray(s.available_slots) ? s.available_slots.length : (s.available_slots ? JSON.parse(s.available_slots).length : 0)}
+                                                        </span>
                                                     </td>
                                                 </tr>
                                             ))
