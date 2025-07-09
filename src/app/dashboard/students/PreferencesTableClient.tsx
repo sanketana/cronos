@@ -12,7 +12,7 @@ interface Preference {
     professor_ids: string[];
     preferences: string;
     updated_at: string;
-    unavailable_slots?: string[];
+    available_slots?: string[];
 }
 
 interface Faculty {
@@ -99,7 +99,7 @@ export default function PreferencesTableClient({ preferences, faculty }: { prefe
                         <th>Event</th>
                         <th>Event Date</th>
                         <th>Professor Preference</th>
-                        <th>Unavailable Slots</th>
+                        <th>Available Slots</th>
                         <th>Notes</th>
                         <th>Last Updated</th>
                     </tr>
@@ -118,7 +118,7 @@ export default function PreferencesTableClient({ preferences, faculty }: { prefe
                                     ? p.professor_ids.map(id => facultyMap[id] || id).join(", ")
                                     : p.professor_ids}
                                 </td>
-                                <td>{Array.isArray(p.unavailable_slots) ? p.unavailable_slots.join(", ") : (p.unavailable_slots || "-")}</td>
+                                <td>{Array.isArray(p.available_slots) ? p.available_slots.join(", ") : (p.available_slots || "-")}</td>
                                 <td>{p.preferences || '-'}</td>
                                 <td>{typeof p.updated_at === 'string' ? p.updated_at.slice(0, 16).replace('T', ' ') : new Date(p.updated_at).toLocaleString()}</td>
                             </tr>

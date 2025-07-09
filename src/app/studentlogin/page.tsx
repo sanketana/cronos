@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 
-export default function LoginPage() {
+export default function StudentLoginPage() {
     const [error, setError] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -15,8 +15,8 @@ export default function LoginPage() {
 
     return (
         <div className="centered-page">
-            <form className="login-form" action="/login/auth" method="POST">
-                <h1 className="login-title">Chronos Admin Login</h1>
+            <form className="login-form" action="/studentlogin/auth" method="POST">
+                <h1 className="login-title">Chronos Student Login</h1>
                 {error && (
                     <div className="error-message">Invalid email or password. Please try again.</div>
                 )}

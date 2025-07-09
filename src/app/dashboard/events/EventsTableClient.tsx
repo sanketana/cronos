@@ -15,6 +15,19 @@ interface Event {
     created_at: string;
     start_time?: string;
     end_time?: string;
+    available_slots?: string;
+}
+
+// Add a helper function to format time to AM/PM
+function formatTimeAMPM(timeStr?: string) {
+    if (!timeStr) return '';
+    const [hour, minute] = timeStr.split(':');
+    let h = parseInt(hour, 10);
+    const m = minute;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    if (h === 0) h = 12;
+    return `${h}:${m} ${ampm}`;
 }
 
 export default function EventsTableClient({ events }: { events: Event[] }) {
@@ -47,8 +60,8 @@ export default function EventsTableClient({ events }: { events: Event[] }) {
                         <tr>
                             <th>Name</th>
                             <th>Date</th>
-                            <th>Start Time</th>
-                            <th>End Time</th>
+                            <th>Event Timings</th>
+                            <th>Sessions</th>
                             <th>Slot Length</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -57,12 +70,12 @@ export default function EventsTableClient({ events }: { events: Event[] }) {
                     <tbody>
                         {events.map((event: Event) => {
                             let dateStr = '';
-                            let startTimeStr = event.start_time ? event.start_time.slice(0, 5) : '';
-                            let endTimeStr = event.end_time ? event.end_time.slice(0, 5) : '';
                             let dateForEdit = (event.date && event.date.length >= 10) ? event.date.slice(0, 10) : '';
                             try {
                                 const dateObj = new Date(event.date ?? '');
-                                dateStr = isNaN(dateObj.getTime()) ? String(event.date) : dateObj.toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                                dateStr = isNaN(dateObj.getTime())
+                                    ? String(event.date)
+                                    : dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' });
                             } catch {
                                 dateStr = String(event.date);
                             }
@@ -70,8 +83,8 @@ export default function EventsTableClient({ events }: { events: Event[] }) {
                                 <tr key={event.id}>
                                     <td>{event.name}</td>
                                     <td>{dateStr}</td>
-                                    <td>{startTimeStr}</td>
-                                    <td>{endTimeStr}</td>
+                                    <td>{formatTimeAMPM(event.start_time)} - {formatTimeAMPM(event.end_time)}</td>
+                                    <td>{Array.isArray(event.available_slots) ? event.available_slots.join(', ') : (event.available_slots || '')}</td>
                                     <td>{event.slot_len} min</td>
                                     <td>{event.status}</td>
                                     <td>

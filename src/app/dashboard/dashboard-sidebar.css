@@ -325,4 +325,11 @@
 
 .icon-btn-purple {
   color: #4E2A84 !important;
+}
+
+/* Ensure tab button hover/focus is white text and purple background */
+.tab-btn:hover, .tab-btn:focus {
+  color: #fff !important;
+  background: #5a3696 !important;
+  transition: background 0.2s, color 0.2s;
 } 

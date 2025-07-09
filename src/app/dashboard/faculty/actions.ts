@@ -50,19 +50,19 @@ export async function deleteFaculty(id: string) {
 
 export async function upsertAvailability({ facultyId, eventId, slots, preferences }: { facultyId: string; eventId: string; slots: string[]; preferences: string }) {
     if (!facultyId || !eventId || !slots) throw new Error('Missing required fields');
-    // Merge overlapping/adjacent slots
-    const mergedSlots = mergeTimeRanges(slots);
     const client = new Client({
         connectionString: process.env.NEON_POSTGRES_URL,
         ssl: { rejectUnauthorized: false }
     });
     await client.connect();
+    // Sort slots before saving
+    const sortedSlots = [...slots].sort();
     await client.query(
-        `INSERT INTO availabilities (faculty_id, event_id, unavailable_slots, preferences, updated_at)
+        `INSERT INTO availabilities (faculty_id, event_id, available_slots, preferences, updated_at)
          VALUES ($1, $2, $3, $4, NOW())
          ON CONFLICT (faculty_id, event_id)
-         DO UPDATE SET unavailable_slots = $3, preferences = $4, updated_at = NOW()`,
-        [facultyId, eventId, JSON.stringify(mergedSlots), preferences]
+         DO UPDATE SET available_slots = $3, preferences = $4, updated_at = NOW()`,
+        [facultyId, eventId, JSON.stringify(sortedSlots), preferences]
     );
     await client.end();
 }
@@ -97,7 +97,7 @@ export async function getAllAvailabilities() {
     });
     await client.connect();
     const result = await client.query(`
-        SELECT a.id, a.faculty_id, u.name as faculty_name, u.email as faculty_email, a.event_id, e.name as event_name, COALESCE(e.date::text, '') as event_date, e.start_time, e.end_time, e.slot_len, a.unavailable_slots, a.preferences, a.updated_at
+        SELECT a.id, a.faculty_id, u.name as faculty_name, u.email as faculty_email, u.department as faculty_department, a.event_id, e.name as event_name, COALESCE(e.date::text, '') as event_date, e.start_time, e.end_time, e.slot_len, a.available_slots, a.preferences, a.updated_at
         FROM availabilities a
         JOIN users u ON a.faculty_id = u.id
         JOIN events e ON a.event_id = e.id
@@ -115,7 +115,7 @@ export async function getAllAvailabilitiesForFaculty(facultyId: string) {
     });
     await client.connect();
     const result = await client.query(
-        `SELECT event_id, unavailable_slots FROM availabilities WHERE faculty_id = $1`,
+        `SELECT event_id, available_slots FROM availabilities WHERE faculty_id = $1`,
         [facultyId]
     );
     await client.end();
@@ -148,7 +148,7 @@ export async function getAvailability(facultyId: string, eventId: string) {
     });
     await client.connect();
     const result = await client.query(
-        `SELECT unavailable_slots, preferences, updated_at FROM availabilities WHERE faculty_id = $1 AND event_id = $2 LIMIT 1`,
+        `SELECT available_slots, preferences, updated_at FROM availabilities WHERE faculty_id = $1 AND event_id = $2 LIMIT 1`,
         [facultyId, eventId]
     );
     await client.end();

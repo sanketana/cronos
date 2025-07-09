@@ -11,7 +11,7 @@ interface Availability {
     event_date: string;
     start_time: string;
     end_time: string;
-    unavailable_slots: string[];
+    available_slots: string[];
     preferences: string;
     updated_at: string;
 }
@@ -61,15 +61,13 @@ export default function AvailabilitiesTableClient({ availabilities }: { availabi
                         <th>Email</th>
                         <th>Event</th>
                         <th>Event Date</th>
-                        <th>Start Time</th>
-                        <th>End Time</th>
-                        <th>Unavailable Slots</th>
+                        <th>Available Slots</th>
                         <th>Preferences</th>
                     </tr>
                 </thead>
                 <tbody>
                     {filtered.length === 0 ? (
-                        <tr><td colSpan={8}>No availabilities found.</td></tr>
+                        <tr><td colSpan={6}>No availabilities found.</td></tr>
                     ) : (
                         filtered.map(a => (
                             <tr key={a.id}>
@@ -77,9 +75,7 @@ export default function AvailabilitiesTableClient({ availabilities }: { availabi
                                 <td>{a.faculty_email}</td>
                                 <td>{a.event_name}</td>
                                 <td>{typeof a.event_date === 'string' && a.event_date ? a.event_date.slice(0, 10) : '-'}</td>
-                                <td>{typeof a.start_time === 'string' ? a.start_time.slice(0, 5) : ''}</td>
-                                <td>{typeof a.end_time === 'string' ? a.end_time.slice(0, 5) : ''}</td>
-                                <td>{Array.isArray(a.unavailable_slots) ? a.unavailable_slots.join(", ") : a.unavailable_slots}</td>
+                                <td>{Array.isArray(a.available_slots) ? a.available_slots.join(", ") : a.available_slots}</td>
                                 <td>{a.preferences || '-'}</td>
                             </tr>
                         ))

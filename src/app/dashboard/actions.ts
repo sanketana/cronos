@@ -9,14 +9,22 @@ export async function createEvent(formData: FormData) {
   const status = formData.get('status') as string;
   const startTime = formData.get('start_time') as string; // time string
   const endTime = formData.get('end_time') as string; // time string
-  if (!name || !date || !slotLen || !status || !startTime || !endTime) {
+  const availableSlots = formData.get('available_slots') as string;
+  // Pattern: 09:00 - 13:00, 15:00 - 17:00
+  const slotPattern = /^([01]\d|2[0-3]):[0-5]\d\s*-\s*([01]\d|2[0-3]):[0-5]\d(,\s*([01]\d|2[0-3]):[0-5]\d\s*-\s*([01]\d|2[0-3]):[0-5]\d)*$/;
+  if (!name || !date || !slotLen || !status || !startTime || !endTime || !availableSlots) {
     throw new Error('Missing required fields');
   }
+  if (!slotPattern.test(availableSlots)) {
+    throw new Error('Available slots format is invalid. Use HH:MM - HH:MM, ...');
+  }
+  // Convert availableSlots to JSON array
+  const availableSlotsJson = JSON.stringify(availableSlots.split(',').map(s => s.replace(/\s+/g, '')));
   const client = new Client({ connectionString: process.env.NEON_POSTGRES_URL });
   await client.connect();
   await client.query(
-    'INSERT INTO events (name, date, slot_len, status, start_time, end_time) VALUES ($1, $2, $3, $4, $5, $6)',
-    [name, date, slotLen, status, startTime, endTime]
+    'INSERT INTO events (name, date, slot_len, status, start_time, end_time, available_slots) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+    [name, date, slotLen, status, startTime, endTime, availableSlotsJson]
   );
   await client.end();
   revalidatePath('/dashboard');
@@ -39,14 +47,21 @@ export async function updateEvent(formData: FormData) {
   const status = formData.get('status') as string;
   const startTime = formData.get('start_time') as string; // time string
   const endTime = formData.get('end_time') as string; // time string
-  if (!id || !name || !date || !slotLen || !status || !startTime || !endTime) {
+  const availableSlots = formData.get('available_slots') as string;
+  const slotPattern = /^([01]\d|2[0-3]):[0-5]\d\s*-\s*([01]\d|2[0-3]):[0-5]\d(,\s*([01]\d|2[0-3]):[0-5]\d\s*-\s*([01]\d|2[0-3]):[0-5]\d)*$/;
+  if (!id || !name || !date || !slotLen || !status || !startTime || !endTime || !availableSlots) {
     throw new Error('Missing required fields');
   }
+  if (!slotPattern.test(availableSlots)) {
+    throw new Error('Available slots format is invalid. Use HH:MM - HH:MM, ...');
+  }
+  // Convert availableSlots to JSON array
+  const availableSlotsJson = JSON.stringify(availableSlots.split(',').map(s => s.replace(/\s+/g, '')));
   const client = new Client({ connectionString: process.env.NEON_POSTGRES_URL });
   await client.connect();
   await client.query(
-    'UPDATE events SET name = $1, date = $2, slot_len = $3, status = $4, start_time = $5, end_time = $6 WHERE id = $7',
-    [name, date, slotLen, status, startTime, endTime, id]
+    'UPDATE events SET name = $1, date = $2, slot_len = $3, status = $4, start_time = $5, end_time = $6, available_slots = $7 WHERE id = $8',
+    [name, date, slotLen, status, startTime, endTime, availableSlotsJson, id]
   );
   await client.end();
   revalidatePath('/dashboard/events');
@@ -55,7 +70,7 @@ export async function updateEvent(formData: FormData) {
 export async function getAllEvents() {
   const client = new Client({ connectionString: process.env.NEON_POSTGRES_URL });
   await client.connect();
-  const result = await client.query('SELECT id, name, date, slot_len, status, start_time, end_time FROM events ORDER BY date DESC');
+  const result = await client.query('SELECT id, name, date, slot_len, status, start_time, end_time, available_slots FROM events ORDER BY date DESC');
   await client.end();
   return result.rows;
 } 

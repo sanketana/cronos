@@ -56,10 +56,10 @@ export async function upsertPreference({ studentId, eventId, professorIds, prefe
     });
     await client.connect();
     await client.query(
-        `INSERT INTO preferences (student_id, event_id, professor_ids, preferences, unavailable_slots, updated_at)
+        `INSERT INTO preferences (student_id, event_id, professor_ids, preferences, available_slots, updated_at)
          VALUES ($1, $2, $3, $4, $5, NOW())
          ON CONFLICT (student_id, event_id)
-         DO UPDATE SET professor_ids = $3, preferences = $4, unavailable_slots = $5, updated_at = NOW()`,
+         DO UPDATE SET professor_ids = $3, preferences = $4, available_slots = $5, updated_at = NOW()`,
         [studentId, eventId, JSON.stringify(professorIds), preferences, unavailableSlots]
     );
     await client.end();
@@ -72,7 +72,7 @@ export async function getAllPreferences() {
     });
     await client.connect();
     const result = await client.query(`
-        SELECT p.id, p.student_id, s.name as student_name, s.email as student_email, p.event_id, e.name as event_name, e.date as event_date, p.professor_ids, p.preferences, p.unavailable_slots, p.updated_at
+        SELECT p.id, p.student_id, s.name as student_name, s.email as student_email, s.department as student_department, p.event_id, e.name as event_name, e.date as event_date, p.professor_ids, p.preferences, p.available_slots, p.updated_at
         FROM preferences p
         JOIN users s ON p.student_id = s.id
         JOIN events e ON p.event_id = e.id

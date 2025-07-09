@@ -13,6 +13,7 @@ interface EventModalProps {
         status: string;
         start_time?: string;
         end_time?: string;
+        available_slots?: string;
     };
     submitLabel?: string;
 }
@@ -37,9 +38,18 @@ export default function EventModal({ isOpen, onClose, onSubmit, initialValues, s
         await onSubmit(formData);
     }
 
+    const formatTimeAMPM = (time: string) => {
+        const [hours, minutes] = time.split(':');
+        const hour = parseInt(hours, 10);
+        const minute = parseInt(minutes, 10);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour % 12 || 12;
+        return `${displayHour}:${minute.toString().padStart(2, '0')} ${ampm}`;
+    };
+
     return (
         <div className="modal-overlay">
-            <div className="modal">
+            <div className="modal" style={{ minWidth: 400, maxWidth: 600 }}>
                 <h2 className="modal-title">{submitLabel} Event</h2>
                 <form onSubmit={handleSubmit}>
                     {initialValues?.id && <input type="hidden" name="id" value={initialValues.id} />}
@@ -66,25 +76,39 @@ export default function EventModal({ isOpen, onClose, onSubmit, initialValues, s
                         />
                     </div>
                     <div className="form-group">
-                        <label htmlFor="start_time" className="form-label">Event Start Time</label>
+                        <label htmlFor="start_time" className="form-label">Start Time</label>
                         <input
                             id="start_time"
                             name="start_time"
                             type="time"
                             className="form-input"
                             required
-                            defaultValue={initialValues?.start_time ? initialValues.start_time.slice(0, 5) : ''}
+                            defaultValue={initialValues?.start_time || '09:00'}
                         />
                     </div>
                     <div className="form-group">
-                        <label htmlFor="end_time" className="form-label">Event End Time</label>
+                        <label htmlFor="end_time" className="form-label">End Time</label>
                         <input
                             id="end_time"
                             name="end_time"
                             type="time"
                             className="form-input"
                             required
-                            defaultValue={initialValues?.end_time ? initialValues.end_time.slice(0, 5) : ''}
+                            defaultValue={initialValues?.end_time || '17:00'}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="available_slots" className="form-label">Sessions</label>
+                        <input
+                            id="available_slots"
+                            name="available_slots"
+                            type="text"
+                            className="form-input"
+                            required
+                            pattern="^([01]\d|2[0-3]):[0-5]\d\s*-\s*([01]\d|2[0-3]):[0-5]\d(,\s*([01]\d|2[0-3]):[0-5]\d\s*-\s*([01]\d|2[0-3]):[0-5]\d)*$"
+                            title="Format: 09:00 - 13:00, 15:00 - 17:00. Only valid 24-hour times allowed."
+                            defaultValue={initialValues?.available_slots || '09:00 - 13:00, 15:00 - 17:00'}
+                            placeholder="09:00 - 13:00, 15:00 - 17:00"
                         />
                     </div>
                     <div className="form-group">

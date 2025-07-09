@@ -8,7 +8,8 @@ const sidebarItems = [
     { label: 'Events', href: '/dashboard/events' },
     { label: 'Faculty', href: '/dashboard/faculty' },
     { label: 'Students', href: '/dashboard/students' },
-    { label: 'Schedules', href: '/dashboard/schedules' },
+    { label: 'Meetings', href: '/dashboard/meetings' },
+    { label: 'Scheduler', href: '/dashboard/scheduler' },
     { label: 'Forms & Links', href: '/dashboard/forms' },
     { label: 'Settings', href: '/dashboard/settings' },
 ];

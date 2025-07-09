@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { getAllEvents } from "../actions";
 import { upsertAvailability, getAvailability, getAllAvailabilitiesForFaculty } from "./actions";
 
@@ -38,19 +38,42 @@ function formatTime12h(timeStr: string) {
     return `${hour}:${minute.toString().padStart(2, '0')} ${ampm}`;
 }
 
+// Helper to generate slots within a range
+function getSlotsFromRanges(ranges: string[], slotLen: number): string[] {
+    const slots: string[] = [];
+    for (const range of ranges) {
+        const [start, end] = range.split('-').map(s => s.trim());
+        let [h, m] = start.split(":").map(Number);
+        let [eh, em] = end.split(":").map(Number);
+        let cur = h * 60 + m;
+        const endMin = eh * 60 + em;
+        while (cur + slotLen <= endMin) {
+            const sh = String(Math.floor(cur / 60)).padStart(2, "0");
+            const sm = String(cur % 60).padStart(2, "0");
+            const ehh = String(Math.floor((cur + slotLen) / 60)).padStart(2, "0");
+            const emm = String((cur + slotLen) % 60).padStart(2, "0");
+            slots.push(`${sh}:${sm}-${ehh}:${emm}`);
+            cur += slotLen;
+        }
+    }
+    return slots;
+}
+
 export default function UpdateAvailabilityModal({ isOpen, onClose, faculty, onSubmit }: Props) {
     const [eventId, setEventId] = useState("");
     const [events, setEvents] = useState<any[]>([]);
     const [unavailableSlots, setUnavailableSlots] = useState<string[]>([]);
     const [slotLen, setSlotLen] = useState(30);
-    const [startTime, setStartTime] = useState("09:00");
-    const [endTime, setEndTime] = useState("17:00");
+    const [startTime, setStartTime] = useState("");
+    const [endTime, setEndTime] = useState("");
     const [eventDate, setEventDate] = useState("");
     const [allSlots, setAllSlots] = useState<string[]>([]);
     const [selectedSlot, setSelectedSlot] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [facultyAvailabilities, setFacultyAvailabilities] = useState<Record<string, string[]>>({});
+    const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+    const selectAllRef = useRef<HTMLInputElement>(null);
 
     // Prefetch all events on mount (not just when modal opens)
     useEffect(() => {
@@ -81,34 +104,64 @@ export default function UpdateAvailabilityModal({ isOpen, onClose, faculty, onSu
         const ev = events.find(e => e.id === eventId);
         if (ev) {
             setSlotLen(ev.slot_len || 30);
-            setStartTime(ev.start_time || "09:00");
-            setEndTime(ev.end_time || "17:00");
+            setStartTime(ev.start_time || "");
+            setEndTime(ev.end_time || "");
             setEventDate(typeof ev.date === 'string' ? ev.date.slice(0, 10) : ev.date instanceof Date ? ev.date.toISOString().slice(0, 10) : '');
-            setAllSlots(getTimeSlots(ev.start_time, ev.end_time, ev.slot_len));
+            let slotsFromEvent: string[] = [];
+            if (ev.available_slots && ev.available_slots.length > 0) {
+                let ranges: string[];
+                if (Array.isArray(ev.available_slots)) {
+                    ranges = ev.available_slots;
+                } else if (typeof ev.available_slots === 'string') {
+                    try {
+                        // Try to parse as JSON array
+                        ranges = JSON.parse(ev.available_slots);
+                        if (!Array.isArray(ranges)) {
+                            ranges = ev.available_slots.split(',').map((s: string) => s.trim()).filter(Boolean);
+                        }
+                    } catch {
+                        ranges = ev.available_slots.split(',').map((s: string) => s.trim()).filter(Boolean);
+                    }
+                } else {
+                    ranges = [];
+                }
+                slotsFromEvent = getSlotsFromRanges(ranges, ev.slot_len);
+            } else {
+                slotsFromEvent = getTimeSlots(ev.start_time, ev.end_time, ev.slot_len);
+            }
+            setAllSlots(slotsFromEvent);
             setSelectedSlot("");
-            // Use prefetched facultyAvailabilities
-            setUnavailableSlots(facultyAvailabilities[ev.id] || []);
+            setAvailableSlots(slotsFromEvent); // select all by default
         }
     }, [eventId, facultyAvailabilities, events]);
 
-    function addSlot() {
-        if (selectedSlot && !unavailableSlots.includes(selectedSlot)) {
-            setUnavailableSlots(prev => [...prev, selectedSlot]);
-            setSelectedSlot("");
+    useEffect(() => {
+        if (selectAllRef.current) {
+            selectAllRef.current.indeterminate = availableSlots.length > 0 && availableSlots.length < allSlots.length;
         }
-    }
+    }, [availableSlots, allSlots]);
 
-    function removeSlot(slot: string) {
-        setUnavailableSlots(prev => prev.filter(s => s !== slot));
+    useEffect(() => {
+        if (isOpen) {
+            setStartTime("");
+            setEndTime("");
+        }
+    }, [isOpen]);
+
+    function handleSlotToggle(slot: string) {
+        setAvailableSlots(prev => prev.includes(slot)
+            ? prev.filter(s => s !== slot)
+            : [...prev, slot]
+        );
     }
 
     function handleSave() {
         if (!eventId) return;
         setLoading(true);
-        upsertAvailability({ facultyId: faculty.id, eventId, slots: unavailableSlots, preferences: "" })
+        upsertAvailability({ facultyId: faculty.id, eventId, slots: availableSlots, preferences: "" })
             .then(() => {
                 setLoading(false);
-                onSubmit({ eventId, slots: unavailableSlots, preferences: "" });
+                onSubmit({ eventId, slots: availableSlots, preferences: "" });
                 onClose();
             })
             .catch(e => {
@@ -121,11 +174,11 @@ export default function UpdateAvailabilityModal({ isOpen, onClose, faculty, onSu
 
     return (
         <div className="modal-overlay">
-            <div className="modal" style={{ minWidth: 360, maxWidth: 540, background: 'var(--northwestern-surface)' }}>
-                <h2 className="modal-title mb-4">Update Unavailability for <span className="text-nw-purple font-semibold">{faculty.name}</span></h2>
+            <div className="modal" style={{ minWidth: 360, maxWidth: 540, minHeight: 700, maxHeight: 900, background: 'var(--northwestern-surface)' }}>
+                <h2 className="modal-title mb-4">Update Availability for <span className="text-nw-purple font-semibold">{faculty.name}</span></h2>
                 <div className="space-y-4">
                     <div className="form-group">
-                        <label className="form-label font-medium">Event</label>
+                        <label className="form-label font-bold">Select Event</label>
                         <select className="form-input rounded-md border-gray-300 focus:border-nw-purple focus:ring-nw-purple" value={eventId} onChange={e => setEventId(e.target.value)} required>
                             <option value="">Select Event</option>
                             {events.map(ev => (
@@ -144,41 +197,48 @@ export default function UpdateAvailabilityModal({ isOpen, onClose, faculty, onSu
                     {eventId && (
                         <>
                             <div className="form-group bg-gray-50 dark:bg-gray-800 rounded-md p-3 border border-gray-200 dark:border-gray-700">
-                                <label className="form-label font-medium mb-1">Event Timings</label>
                                 <div className="flex flex-col md:flex-row md:items-center md:gap-6 text-sm text-gray-700 dark:text-gray-200">
-                                    <div>Date: <b>{eventDate}</b></div>
-                                    <div>Start: <b>{formatTime12h(startTime)}</b></div>
-                                    <div>End: <b>{formatTime12h(endTime)}</b></div>
-                                    <div>Slot Length: <b>{slotLen} min</b></div>
+                                    <div><b>Event Timings:</b> {formatTime12h(startTime)} - {formatTime12h(endTime)}</div>
+                                    <div><b>Slot Length:</b> {slotLen} min</div>
                                 </div>
                             </div>
-                            <div className="form-group flex flex-col md:flex-row md:items-end gap-2">
-                                <div className="flex-1">
-                                    <label className="form-label font-medium">Add Unavailable Slot</label>
-                                    <select className="form-input rounded-md border-gray-300 focus:border-nw-purple focus:ring-nw-purple" value={selectedSlot} onChange={e => setSelectedSlot(e.target.value)}>
-                                        <option value="">Select Slot</option>
-                                        {allSlots.filter(slot => !unavailableSlots.includes(slot)).map(slot => (
-                                            <option key={slot} value={slot}>{slot}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <button type="button" className="primary-btn h-10 px-4 rounded-md" onClick={addSlot} disabled={!selectedSlot}>Add</button>
-                            </div>
-                            {/* Unavailable slots on next line, not inline with dropdown */}
                             <div className="form-group mt-2">
-                                <label className="form-label font-medium">Unavailable Slots</label>
-                                <div className="flex flex-col gap-2 mt-1 w-full">
-                                    {unavailableSlots.length === 0 && <span className="text-xs text-gray-500">No slots selected</span>}
-                                    {unavailableSlots.map(slot => (
-                                        <span key={slot} className="flex items-center bg-red-100 text-red-800 rounded-full px-3 py-1 text-xs font-semibold shadow-sm w-fit">
-                                            {slot}
-                                            <button type="button" className="ml-2 bg-northwestern-purple hover:bg-northwestern-dark-purple text-white rounded-full p-0.5 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-northwestern-purple" onClick={() => removeSlot(slot)} aria-label={`Remove slot ${slot}`}>
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                                </svg>
-                                            </button>
-                                        </span>
-                                    ))}
+                                <div className="font-bold text-gray-800 mb-3" style={{ fontWeight: 700 }}>I am available at below slots</div>
+                                <div className="w-full">
+                                    <div className="flex items-center mb-3 p-3 rounded border-2 border-nw-purple bg-white shadow" style={{ position: 'relative', zIndex: 2 }}>
+                                        <input
+                                            type="checkbox"
+                                            id="selectAllSlots"
+                                            ref={selectAllRef}
+                                            checked={availableSlots.length === allSlots.length && allSlots.length > 0}
+                                            onChange={e => {
+                                                if (e.target.checked) {
+                                                    setAvailableSlots(allSlots);
+                                                } else {
+                                                    setAvailableSlots([]);
+                                                }
+                                            }}
+                                            aria-checked={availableSlots.length > 0 && availableSlots.length < allSlots.length ? 'mixed' : availableSlots.length === allSlots.length}
+                                        />
+                                        <label htmlFor="selectAllSlots" className="ml-2 font-bold cursor-pointer text-nw-purple" style={{ letterSpacing: 1 }}>Select/Deselect All</label>
+                                    </div>
+                                    <hr className="mb-2 border-t-2 border-nw-purple" />
+                                    <div className="flex flex-col gap-2 w-full" style={{ maxHeight: 500, overflowY: 'auto' }}>
+                                        {allSlots.map((slot: string, idx: number) => (
+                                            <label
+                                                key={slot}
+                                                className={`flex items-center gap-2 px-3 py-2 rounded w-full ${idx % 2 === 0 ? 'bg-gray-100 dark:bg-gray-700' : 'bg-purple-50 dark:bg-gray-800'}`}
+                                                style={{ marginBottom: 4, display: 'block', border: '1px solid #e5e7eb' }}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={availableSlots.includes(slot)}
+                                                    onChange={() => handleSlotToggle(slot)}
+                                                />
+                                                <span>{slot}</span>
+                                            </label>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </>

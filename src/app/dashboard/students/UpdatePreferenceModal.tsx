@@ -4,6 +4,7 @@ import { getAllEvents } from "../actions";
 import { upsertPreference } from "./actions";
 import { getAvailableFacultyForEvent } from "../faculty/actions";
 import { getAllPreferences } from "./actions";
+import { useRef } from 'react';
 
 interface Props {
     isOpen: boolean;
@@ -15,14 +16,17 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
     const [eventId, setEventId] = useState("");
     const [professors, setProfessors] = useState<{ id: string; name: string }[]>([]);
     const [professorChoices, setProfessorChoices] = useState<(string | null)[]>([null, null, null, null, null]);
-    const [events, setEvents] = useState<{ id: string; name: string; date: string; start_time: string; end_time: string; slot_len: number }[]>([]);
+    const [events, setEvents] = useState<{ id: string; name: string; date: string; start_time: string; end_time: string; slot_len: number; available_slots?: string }[]>([]);
     const [notes, setNotes] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [allSlots, setAllSlots] = useState<string[]>([]);
-    const [selectedSlot, setSelectedSlot] = useState("");
-    const [unavailableSlots, setUnavailableSlots] = useState<string[]>([]);
     const [studentPrefs, setStudentPrefs] = useState<Record<string, string[]>>({});
+    const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+    const [tab, setTab] = useState<'preferences' | 'slots'>('preferences');
+    const [showErrorPopup, setShowErrorPopup] = useState(false);
+    const errorPopupRef = useRef<HTMLDivElement>(null);
+    const selectAllRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         async function fetchData() {
@@ -46,20 +50,23 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
         fetchAvailableFaculty();
     }, [eventId]);
 
-    // Helper to get time slots for an event
-    function getTimeSlots(start: string, end: string, slotLen: number): string[] {
+    // Helper to generate slots within a range (copied from faculty modal)
+    function getSlotsFromRanges(ranges: string[], slotLen: number): string[] {
         const slots: string[] = [];
-        let [h, m] = start.split(":").map(Number);
-        let [eh, em] = end.split(":").map(Number);
-        let cur = h * 60 + m;
-        const endMin = eh * 60 + em;
-        while (cur + slotLen <= endMin) {
-            const sh = String(Math.floor(cur / 60)).padStart(2, "0");
-            const sm = String(cur % 60).padStart(2, "0");
-            const ehh = String(Math.floor((cur + slotLen) / 60)).padStart(2, "0");
-            const emm = String((cur + slotLen) % 60).padStart(2, "0");
-            slots.push(`${sh}:${sm}-${ehh}:${emm}`);
-            cur += slotLen;
+        for (const range of ranges) {
+            const [start, end] = range.split('-').map(s => s.trim());
+            let [h, m] = start.split(":").map(Number);
+            let [eh, em] = end.split(":").map(Number);
+            let cur = h * 60 + m;
+            const endMin = eh * 60 + em;
+            while (cur + slotLen <= endMin) {
+                const sh = String(Math.floor(cur / 60)).padStart(2, "0");
+                const sm = String(cur % 60).padStart(2, "0");
+                const ehh = String(Math.floor((cur + slotLen) / 60)).padStart(2, "0");
+                const emm = String((cur + slotLen) % 60).padStart(2, "0");
+                slots.push(`${sh}:${sm}-${ehh}:${emm}`);
+                cur += slotLen;
+            }
         }
         return slots;
     }
@@ -81,18 +88,40 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
         fetchPrefs();
     }, [isOpen, student.id]);
 
-    // When event changes, set up slots and prefill unavailable slots
+    // When event changes, set up slots and prefill available slots
     useEffect(() => {
         if (!eventId) return;
         const ev = events.find(e => e.id === eventId);
-        if (ev && ev.start_time && ev.end_time && ev.slot_len) {
-            setAllSlots(getTimeSlots(ev.start_time, ev.end_time, ev.slot_len));
+        if (ev && ev.slot_len) {
+            let ranges: string[] = [];
+            if (ev.available_slots && ev.available_slots.length > 0) {
+                if (Array.isArray(ev.available_slots)) {
+                    ranges = ev.available_slots;
+                } else if (typeof ev.available_slots === 'string') {
+                    try {
+                        ranges = JSON.parse(ev.available_slots);
+                        if (!Array.isArray(ranges)) {
+                            ranges = ev.available_slots.split(',').map((s: string) => s.trim()).filter(Boolean);
+                        }
+                    } catch {
+                        ranges = ev.available_slots.split(',').map((s: string) => s.trim()).filter(Boolean);
+                    }
+                }
+            }
+            const slotsFromEvent = getSlotsFromRanges(ranges, ev.slot_len);
+            setAllSlots(slotsFromEvent);
+            setAvailableSlots(slotsFromEvent); // select all by default
         } else {
             setAllSlots([]);
+            setAvailableSlots([]);
         }
-        setUnavailableSlots(studentPrefs[eventId] || []);
-        setSelectedSlot("");
-    }, [eventId, events, studentPrefs]);
+    }, [eventId, events]);
+
+    useEffect(() => {
+        if (selectAllRef.current) {
+            selectAllRef.current.indeterminate = availableSlots.length > 0 && availableSlots.length < allSlots.length;
+        }
+    }, [availableSlots, allSlots]);
 
     function handleProfessorChange(idx: number, value: string) {
         setProfessorChoices(prev => {
@@ -102,15 +131,18 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
         });
     }
 
-    function addSlot() {
-        if (selectedSlot && !unavailableSlots.includes(selectedSlot)) {
-            setUnavailableSlots(prev => [...prev, selectedSlot]);
-            setSelectedSlot("");
-        }
+    function handleSlotToggle(slot: string) {
+        setAvailableSlots(prev => prev.includes(slot)
+            ? prev.filter(s => s !== slot)
+            : [...prev, slot]
+        );
     }
 
-    function removeSlot(slot: string) {
-        setUnavailableSlots(prev => prev.filter(s => s !== slot));
+    function canProceedToSlots() {
+        const selected = professorChoices.filter(Boolean) as string[];
+        if (selected.length < 3) return false;
+        if (new Set(selected).size !== selected.length) return false;
+        return true;
     }
 
     async function handleSubmit(e: React.FormEvent) {
@@ -118,11 +150,15 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
         setError(null);
         const selected = professorChoices.filter(Boolean) as string[];
         if (selected.length < 3) {
-            setError("Select at least 3 professors.");
+            setError("Please select at least 3 unique professors.");
+            setShowErrorPopup(true);
+            setTab('preferences');
             return;
         }
         if (new Set(selected).size !== selected.length) {
             setError("No duplicate professors allowed.");
+            setShowErrorPopup(true);
+            setTab('preferences');
             return;
         }
         setLoading(true);
@@ -132,7 +168,7 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
                 eventId,
                 professorIds: selected,
                 preferences: notes,
-                unavailableSlots,
+                unavailableSlots: availableSlots, // send as availableSlots
             });
             setLoading(false);
             onClose();
@@ -140,6 +176,7 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
         } catch (err: any) {
             setLoading(false);
             setError(err?.message || 'Failed to save. Please try again.');
+            setShowErrorPopup(true);
         }
     }
 
@@ -147,84 +184,150 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
 
     return (
         <div className="modal-overlay">
-            <div className="modal" style={{ minWidth: 340, maxWidth: 480 }}>
+            <div className="modal" style={{ minWidth: 340, maxWidth: 540, minHeight: 900, maxHeight: 1100, overflowY: 'auto' }}>
                 <h2 className="modal-title">Update Preference for {student.name}</h2>
-                <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label className="form-label">Event</label>
-                        <select className="form-input" value={eventId} onChange={e => setEventId(e.target.value)} required>
-                            <option value="">Select Event</option>
-                            {events.map(ev => (
-                                <option key={ev.id} value={ev.id}>{ev.name} ({typeof ev.date === 'string' ? ev.date.slice(0, 10) : new Date(ev.date).toISOString().slice(0, 10)})</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="form-group">
-                        <label className="form-label">Professor Preferences</label>
-                        {[0, 1, 2, 3, 4].map(idx => (
-                            <div key={idx} style={{ marginBottom: 8 }}>
-                                <label className="form-label">
-                                    Preference {idx + 1} {idx >= 3 ? <span className="text-xs text-gray-500">(optional)</span> : null}
-                                </label>
-                                <select
-                                    className="form-input"
-                                    value={professorChoices[idx] || ""}
-                                    onChange={e => handleProfessorChange(idx, e.target.value)}
-                                    required={idx < 3}
-                                    disabled={!eventId || professors.length === 0}
-                                >
-                                    <option value="">Select Professor</option>
-                                    {professors
-                                        .filter(p =>
-                                            // Only show professors not already selected in other dropdowns
-                                            !professorChoices.includes(p.id) || professorChoices[idx] === p.id
-                                        )
-                                        .map(p => (
-                                            <option key={p.id} value={p.id}>{p.name}</option>
-                                        ))}
-                                </select>
-                            </div>
+                {error && <div className="text-red-600 text-sm mb-2 font-semibold">{error}</div>}
+                <div className="form-group">
+                    <label className="form-label">Event</label>
+                    <select className="form-input" value={eventId} onChange={e => setEventId(e.target.value)} required>
+                        <option value="">Select Event</option>
+                        {events.map(ev => (
+                            <option key={ev.id} value={ev.id}>{ev.name} ({typeof ev.date === 'string' ? ev.date.slice(0, 10) : new Date(ev.date).toISOString().slice(0, 10)})</option>
                         ))}
-                        <div className="text-xs text-gray-500 mt-1">Select at least 3 professors. No duplicates allowed. Professors shown are only those available for the selected event.</div>
-                    </div>
-                    <div className="form-group">
-                        <label className="form-label">Unavailable Slots</label>
-                        <div className="flex flex-col md:flex-row md:items-end gap-2">
-                            <div className="flex-1">
-                                <select className="form-input rounded-md border-gray-300 focus:border-nw-purple focus:ring-nw-purple" value={selectedSlot} onChange={e => setSelectedSlot(e.target.value)}>
-                                    <option value="">Select Slot</option>
-                                    {allSlots.filter(slot => !unavailableSlots.includes(slot)).map(slot => (
-                                        <option key={slot} value={slot}>{slot}</option>
+                    </select>
+                </div>
+                <div className="tabs flex mb-4">
+                    <button
+                        className={`tab-btn flex-1${tab === 'preferences' ? ' active-tab' : ''}`}
+                        type="button"
+                        onClick={() => setTab('preferences')}
+                    >
+                        Select your Professor preference
+                    </button>
+                    <button
+                        className={`tab-btn flex-1${tab === 'slots' ? ' active-tab' : ''}`}
+                        type="button"
+                        onClick={() => setTab('slots')}
+                    >
+                        Available Slots
+                    </button>
+                </div>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', minHeight: 700, maxHeight: 900 }}>
+                    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', overflow: 'visible' }}>
+                        {tab === 'preferences' && (
+                            <>
+                                <div className="form-group">
+                                    <label className="form-label">Select your Professor preference</label>
+                                    {[0, 1, 2, 3, 4].map(idx => (
+                                        <div key={idx} style={{ marginBottom: 8 }}>
+                                            <label className="form-label">
+                                                Preference {idx + 1} {idx >= 3 ? <span className="text-xs text-gray-500">(optional)</span> : null}
+                                            </label>
+                                            <select
+                                                className="form-input"
+                                                value={professorChoices[idx] || ""}
+                                                onChange={e => handleProfessorChange(idx, e.target.value)}
+                                                required={idx < 3}
+                                                disabled={!eventId || professors.length === 0}
+                                            >
+                                                <option value="" disabled>Select Professor</option>
+                                                {professors
+                                                    .filter(p =>
+                                                        // Only show professors not already selected in other dropdowns
+                                                        !professorChoices.includes(p.id) || professorChoices[idx] === p.id
+                                                    )
+                                                    .map(p => (
+                                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                                    ))}
+                                            </select>
+                                        </div>
                                     ))}
-                                </select>
-                            </div>
-                            <button type="button" className="primary-btn h-10 px-4 rounded-md" onClick={addSlot} disabled={!selectedSlot}>Add</button>
-                        </div>
-                        <div className="flex flex-col gap-2 mt-2 w-full">
-                            {unavailableSlots.length === 0 && <span className="text-xs text-gray-500">No slots selected</span>}
-                            {unavailableSlots.map(slot => (
-                                <span key={slot} className="flex items-center bg-red-100 text-red-800 rounded-full px-3 py-1 text-xs font-semibold shadow-sm w-fit">
-                                    {slot}
-                                    <button type="button" className="ml-2 bg-northwestern-purple hover:bg-northwestern-dark-purple text-white rounded-full p-0.5 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-northwestern-purple" onClick={() => removeSlot(slot)} aria-label={`Remove slot ${slot}`}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                </span>
-                            ))}
-                        </div>
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Notes (optional)</label>
+                                    <textarea
+                                        className="form-input"
+                                        value={notes}
+                                        onChange={e => setNotes(e.target.value)}
+                                        placeholder="Optional notes or preferences"
+                                        rows={2}
+                                    />
+                                </div>
+                            </>
+                        )}
+                        {tab === 'slots' && (
+                            <>
+                                <div className="form-group mt-2">
+                                    <div className="font-bold text-gray-800 mb-3" style={{ fontWeight: 700 }}>I am available at below slots</div>
+                                    <div className="w-full">
+                                        <div className="flex items-center mb-3 p-3 rounded border-2 border-nw-purple bg-white shadow" style={{ position: 'relative', zIndex: 2 }}>
+                                            <input
+                                                type="checkbox"
+                                                id="selectAllSlots"
+                                                ref={selectAllRef}
+                                                checked={availableSlots.length === allSlots.length && allSlots.length > 0}
+                                                onChange={e => {
+                                                    if (e.target.checked) {
+                                                        setAvailableSlots(allSlots);
+                                                    } else {
+                                                        setAvailableSlots([]);
+                                                    }
+                                                }}
+                                                aria-checked={availableSlots.length > 0 && availableSlots.length < allSlots.length ? 'mixed' : availableSlots.length === allSlots.length}
+                                            />
+                                            <label htmlFor="selectAllSlots" className="ml-2 font-bold cursor-pointer text-nw-purple" style={{ letterSpacing: 1 }}>Select/Deselect All</label>
+                                        </div>
+                                        <hr className="mb-2 border-t-2 border-nw-purple" />
+                                        <div className="flex flex-col gap-2 w-full" style={{ maxHeight: 700, overflowY: 'auto' }}>
+                                            {allSlots.map((slot: string, idx: number) => (
+                                                <label
+                                                    key={slot}
+                                                    className={`flex items-center gap-2 px-3 py-2 rounded w-full ${idx % 2 === 0 ? 'bg-gray-100 dark:bg-gray-700' : 'bg-purple-50 dark:bg-gray-800'}`}
+                                                    style={{ marginBottom: 4, display: 'block', border: '1px solid #e5e7eb' }}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={availableSlots.includes(slot)}
+                                                        onChange={() => handleSlotToggle(slot)}
+                                                    />
+                                                    <span>{slot}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
-                    <div className="form-group">
-                        <label className="form-label">Notes (optional)</label>
-                        <textarea className="form-input" value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Optional notes or preferences" />
-                    </div>
-                    {error && <div className="text-red-600 text-sm mb-2">{error}</div>}
-                    <div className="modal-actions">
+                    <div className="modal-actions flex justify-end gap-2 mt-4">
                         <button type="button" className="secondary-btn" onClick={onClose} disabled={loading}>Cancel</button>
-                        <button type="submit" className="primary-btn" disabled={loading || !eventId || professorChoices.filter(Boolean).length < 3}>{loading ? "Saving..." : "Save"}</button>
+                        <button type="submit" className="primary-btn" disabled={loading}>Save</button>
                     </div>
                 </form>
+                {/* Error Popup */}
+                {showErrorPopup && (
+                    <div ref={errorPopupRef} className="fixed inset-0 flex items-center justify-center z-50">
+                        <div className="bg-white border border-red-400 rounded-lg shadow-lg p-6 max-w-xs w-full flex flex-col items-center">
+                            <div className="text-red-600 font-semibold mb-2">{error}</div>
+                            <button className="primary-btn mt-2" onClick={() => setShowErrorPopup(false)}>OK</button>
+                        </div>
+                        <div className="fixed inset-0 bg-black opacity-30 z-40" onClick={() => setShowErrorPopup(false)} />
+                    </div>
+                )}
             </div>
         </div>
     );
-} 
+}
+
+/* Add this CSS to your global or component CSS:
+.tab-btn.active-tab {
+  background: #ede9fe;
+  color: #5a3696;
+  font-weight: bold;
+  border-bottom: 2px solid #5a3696;
+}
+.tab-btn:hover {
+  color: #fff !important;
+  background: #5a3696 !important;
+}
+*/ 
