@@ -57,12 +57,24 @@ async function getEvents() {
     return result.rows;
 }
 
+async function getRuns() {
+    const client = new Client({
+        connectionString: process.env.NEON_POSTGRES_URL,
+        ssl: { rejectUnauthorized: false }
+    });
+    await client.connect();
+    const result = await client.query('SELECT id, run_time, algorithm, triggered_by FROM scheduler_runs ORDER BY run_time DESC');
+    await client.end();
+    return result.rows;
+}
+
 export default async function MeetingsPage() {
-    const [meetings, professors, students, events] = await Promise.all([
+    const [meetings, professors, students, events, runs] = await Promise.all([
         getMeetings(),
         getProfessors(),
         getStudents(),
-        getEvents()
+        getEvents(),
+        getRuns()
     ]);
-    return <MeetingsTabsClient meetings={meetings} professors={professors} students={students} events={events} />;
+    return <MeetingsTabsClient meetings={meetings} professors={professors} students={students} events={events} runs={runs} />;
 } 

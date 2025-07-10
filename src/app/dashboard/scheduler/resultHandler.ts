@@ -2,7 +2,7 @@
 import { ScheduledMeeting } from './IMatchingAlgorithm';
 import { Client } from 'pg';
 
-export async function saveMeetings(meetings: ScheduledMeeting[]) {
+export async function saveMeetings(meetings: ScheduledMeeting[], runId: number) {
     if (!meetings.length) return;
     const eventId = meetings[0].eventId;
     const client = new Client({ connectionString: process.env.NEON_POSTGRES_URL });
@@ -11,8 +11,8 @@ export async function saveMeetings(meetings: ScheduledMeeting[]) {
     const eventRes = await client.query('SELECT date FROM events WHERE id = $1', [eventId]);
     if (!eventRes.rows.length) throw new Error('Event not found');
     const eventDate = eventRes.rows[0].date; // e.g., '2024-07-10'
-    // Remove existing meetings for this event
-    await client.query('DELETE FROM meetings WHERE event_id = $1', [eventId]);
+    // Remove existing meetings for this event and runId
+    await client.query('DELETE FROM meetings WHERE event_id = $1 AND run_id = $2', [eventId, runId]);
     // Helper to parse slot string to timestamps
     function parseSlotToTimestamps(eventDate: string, slot: string) {
         const [start, end] = slot.split('-').map(s => s.trim());
@@ -34,8 +34,8 @@ export async function saveMeetings(meetings: ScheduledMeeting[]) {
             throw new Error(`Invalid slot or event date: eventDate=${eventDateStr}, slot=${m.slot}`);
         }
         await client.query(
-            'INSERT INTO meetings (event_id, faculty_id, student_id, start_time, end_time, source) VALUES ($1, $2, $3, $4, $5, $6)',
-            [m.eventId, m.professorId, m.studentId, starts_at, ends_at, 'AUTO']
+            'INSERT INTO meetings (event_id, faculty_id, student_id, start_time, end_time, source, run_id) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+            [m.eventId, m.professorId, m.studentId, starts_at, ends_at, 'AUTO', runId]
         );
     }
     await client.end();

@@ -15,18 +15,27 @@ interface Meeting {
     // ...other fields
     professor_id?: string;
     professor_name?: string;
+    run_id?: number; // Added run_id to the interface
 }
 
 interface User { id: string; name: string; }
 interface Event { id: string; name: string; }
+interface RunMeta {
+    id: number;
+    run_time: string;
+    algorithm: string;
+    triggered_by: string | null;
+}
 
-export default function MeetingsTabsClient({ meetings, professors, students, events }: {
+export default function MeetingsTabsClient({ meetings, professors, students, events, runs }: {
     meetings: Meeting[];
     professors: User[];
     students: User[];
     events: Event[];
+    runs: RunMeta[];
 }) {
     // Single-select filter state
+    const [runIdFilter, setRunIdFilter] = useState('');
     const [eventFilter, setEventFilter] = useState('');
     const [facultyFilter, setFacultyFilter] = useState('');
     const [studentFilter, setStudentFilter] = useState('');
@@ -51,14 +60,16 @@ export default function MeetingsTabsClient({ meetings, professors, students, eve
     const uniqueDates = Array.from(new Set(meetings.map(m => formatDate(m.start_time)))).filter(Boolean);
     const uniqueSlots = Array.from(new Set(meetings.map(m => formatSlot(m.start_time, m.end_time)))).filter(Boolean);
 
-    // Filtered meetings
-    const filteredMeetings = meetings.filter(m => {
+    // Sort meetings by run_id descending before filtering
+    const sortedMeetings = [...meetings].sort((a, b) => (b.run_id || 0) - (a.run_id || 0));
+    const filteredMeetings = sortedMeetings.filter(m => {
+        const runMatch = !runIdFilter || String(m.run_id) === runIdFilter;
         const eventMatch = !eventFilter || m.event_id === eventFilter;
         const facultyMatch = !facultyFilter || m.faculty_id === facultyFilter;
         const studentMatch = !studentFilter || m.student_id === studentFilter;
         const dateMatch = !dateFilter || formatDate(m.start_time) === dateFilter;
         const slotMatch = !slotFilter || formatSlot(m.start_time, m.end_time) === slotFilter;
-        return eventMatch && facultyMatch && studentMatch && dateMatch && slotMatch;
+        return runMatch && eventMatch && facultyMatch && studentMatch && dateMatch && slotMatch;
     });
 
     function handleExportExcel() {
@@ -99,6 +110,16 @@ export default function MeetingsTabsClient({ meetings, professors, students, eve
                     <table className="events-table">
                         <thead>
                             <tr className="filter-row">
+                                <th className="run-id-col">
+                                    <select className="filter-select" value={runIdFilter} onChange={e => setRunIdFilter(e.target.value)}>
+                                        <option value="">Run ID</option>
+                                        {runs.map(run => (
+                                            <option key={run.id} value={run.id}>
+                                                {`#${run.id} | ${run.algorithm} | ${new Date(run.run_time).toLocaleString()}`}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </th>
                                 <th>
                                     <select className="filter-select" value={eventFilter} onChange={e => setEventFilter(e.target.value)}>
                                         <option value="">Event</option>
@@ -143,10 +164,11 @@ export default function MeetingsTabsClient({ meetings, professors, students, eve
                         </thead>
                         <tbody>
                             {filteredMeetings.length === 0 ? (
-                                <tr><td colSpan={5}>No meetings scheduled.</td></tr>
+                                <tr><td colSpan={6}>No meetings scheduled.</td></tr>
                             ) : (
                                 filteredMeetings.map(m => (
                                     <tr key={m.id}>
+                                        <td className="run-id-col">{m.run_id}</td>
                                         <td>{m.event_name}</td>
                                         <td>{m.faculty_name}</td>
                                         <td>{m.student_name}</td>

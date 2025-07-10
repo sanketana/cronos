@@ -143,6 +143,16 @@
 .events-table tr:last-child td {
   border-bottom: none;
 }
+.events-table th.run-id-col, .events-table td.run-id-col {
+  min-width: 120px;
+  max-width: 160px;
+  width: 1%;
+  text-align: center;
+}
+.events-table th.run-id-col .filter-select {
+  min-width: 110px;
+  max-width: 150px;
+}
 
 .secondary-btn, .danger-btn {
   min-width: 80px;
