@@ -10,6 +10,8 @@ interface Meeting {
     event_name: string;
     faculty_name: string;
     student_name: string;
+    start_time?: string;
+    end_time?: string;
     // ...other fields
     professor_id?: string;
     professor_name?: string;
@@ -24,43 +26,138 @@ export default function MeetingsTabsClient({ meetings, professors, students, eve
     students: User[];
     events: Event[];
 }) {
-    const [tab, setTab] = useState<'professor' | 'student' | 'master'>('professor');
+    // Single-select filter state
+    const [eventFilter, setEventFilter] = useState('');
+    const [facultyFilter, setFacultyFilter] = useState('');
+    const [studentFilter, setStudentFilter] = useState('');
+    const [dateFilter, setDateFilter] = useState('');
+    const [slotFilter, setSlotFilter] = useState('');
+
+    // Helper to format date and slot
+    function formatDate(dateStr?: string) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' });
+    }
+    function formatSlot(startStr?: string, endStr?: string) {
+        if (!startStr || !endStr) return '';
+        const start = new Date(startStr);
+        const end = new Date(endStr);
+        const formatTime = (d: Date) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        return `${formatTime(start)} - ${formatTime(end)}`;
+    }
+
+    // Unique dates and slots for filters
+    const uniqueDates = Array.from(new Set(meetings.map(m => formatDate(m.start_time)))).filter(Boolean);
+    const uniqueSlots = Array.from(new Set(meetings.map(m => formatSlot(m.start_time, m.end_time)))).filter(Boolean);
+
+    // Filtered meetings
+    const filteredMeetings = meetings.filter(m => {
+        const eventMatch = !eventFilter || m.event_id === eventFilter;
+        const facultyMatch = !facultyFilter || m.faculty_id === facultyFilter;
+        const studentMatch = !studentFilter || m.student_id === studentFilter;
+        const dateMatch = !dateFilter || formatDate(m.start_time) === dateFilter;
+        const slotMatch = !slotFilter || formatSlot(m.start_time, m.end_time) === slotFilter;
+        return eventMatch && facultyMatch && studentMatch && dateMatch && slotMatch;
+    });
+
+    function handleExportExcel() {
+        const exportData = filteredMeetings.map(m => ({
+            Event: m.event_name,
+            Faculty: m.faculty_name,
+            Student: m.student_name,
+            Date: formatDate(m.start_time),
+            Slot: formatSlot(m.start_time, m.end_time),
+        }));
+        if (exportData.length === 0) return;
+        const headers = Object.keys(exportData[0]);
+        const csvRows = [
+            headers.join(','),
+            ...exportData.map(row => headers.map(field => `"${((row as Record<string, string>)[field] ?? '').toString().replace(/"/g, '""')}"`).join(',')),
+        ];
+        const csvString = csvRows.join('\r\n');
+        const blob = new Blob([csvString], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'meetings.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+
     return (
         <div>
             <h1 className="dashboard-title">Meetings</h1>
-            <div className="tabs" role="tablist">
-                <button
-                    className="tab-btn"
-                    role="tab"
-                    aria-selected={tab === 'professor'}
-                    onClick={() => setTab('professor')}
-                    tabIndex={0}
-                >
-                    Professor Calendar
-                </button>
-                <button
-                    className="tab-btn"
-                    role="tab"
-                    aria-selected={tab === 'student'}
-                    onClick={() => setTab('student')}
-                    tabIndex={0}
-                >
-                    Student Calendar
-                </button>
-                <button
-                    className="tab-btn"
-                    role="tab"
-                    aria-selected={tab === 'master'}
-                    onClick={() => setTab('master')}
-                    tabIndex={0}
-                >
-                    Master Calendar
-                </button>
-            </div>
-            <div className="mt-6">
-                {tab === 'professor' && <div>Professor Calendar (coming soon)</div>}
-                {tab === 'student' && <div>Student Calendar (coming soon)</div>}
-                {tab === 'master' && <div>Master Calendar (coming soon)</div>}
+            <button
+                className="primary-btn export-btn"
+                onClick={handleExportExcel}
+            >
+                Export as Excel
+            </button>
+            <div style={{ marginTop: '1.5rem' }}>
+                <div>
+                    <table className="events-table">
+                        <thead>
+                            <tr className="filter-row">
+                                <th>
+                                    <select className="filter-select" value={eventFilter} onChange={e => setEventFilter(e.target.value)}>
+                                        <option value="">Event</option>
+                                        {events.map(ev => (
+                                            <option key={ev.id} value={ev.id}>{ev.name}</option>
+                                        ))}
+                                    </select>
+                                </th>
+                                <th>
+                                    <select className="filter-select" value={facultyFilter} onChange={e => setFacultyFilter(e.target.value)}>
+                                        <option value="">Faculty</option>
+                                        {professors.map(f => (
+                                            <option key={f.id} value={f.id}>{f.name}</option>
+                                        ))}
+                                    </select>
+                                </th>
+                                <th>
+                                    <select className="filter-select" value={studentFilter} onChange={e => setStudentFilter(e.target.value)}>
+                                        <option value="">Student</option>
+                                        {students.map(s => (
+                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                        ))}
+                                    </select>
+                                </th>
+                                <th>
+                                    <select className="filter-select" value={dateFilter} onChange={e => setDateFilter(e.target.value)}>
+                                        <option value="">Date</option>
+                                        {uniqueDates.map(date => (
+                                            <option key={date} value={date}>{date}</option>
+                                        ))}
+                                    </select>
+                                </th>
+                                <th>
+                                    <select className="filter-select" value={slotFilter} onChange={e => setSlotFilter(e.target.value)}>
+                                        <option value="">Slot</option>
+                                        {uniqueSlots.map(slot => (
+                                            <option key={slot} value={slot}>{slot}</option>
+                                        ))}
+                                    </select>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredMeetings.length === 0 ? (
+                                <tr><td colSpan={5}>No meetings scheduled.</td></tr>
+                            ) : (
+                                filteredMeetings.map(m => (
+                                    <tr key={m.id}>
+                                        <td>{m.event_name}</td>
+                                        <td>{m.faculty_name}</td>
+                                        <td>{m.student_name}</td>
+                                        <td>{formatDate(m.start_time)}</td>
+                                        <td>{formatSlot(m.start_time, m.end_time)}</td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

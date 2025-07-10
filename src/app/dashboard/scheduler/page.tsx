@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { getAllEvents } from "../actions";
 import { getAllAvailabilities } from "../faculty/actions";
 import { getAllPreferences } from "../students/actions";
+import { runSchedulerAction } from './actions';
 
 export default function SchedulerPage() {
     const [events, setEvents] = useState<any[]>([]);
@@ -11,6 +12,7 @@ export default function SchedulerPage() {
     const [professors, setProfessors] = useState<any[]>([]);
     const [students, setStudents] = useState<any[]>([]);
     const [loadingData, setLoadingData] = useState(true);
+    const [result, setResult] = useState<string | null>(null);
 
     useEffect(() => {
         async function fetchData() {
@@ -113,13 +115,31 @@ export default function SchedulerPage() {
                 </div>
                 <button
                     className="primary-btn px-6 py-2 rounded disabled:opacity-50 mt-4 md:mt-0"
-                    disabled
-                    title="The scheduler is currently unavailable."
-                    style={{ cursor: 'not-allowed', opacity: 0.6 }}
+                    disabled={!selectedEvent || loadingData}
+                    onClick={async () => {
+                        setResult(null);
+                        try {
+                            const res = await runSchedulerAction(selectedEvent);
+                            setResult(
+                                `Scheduled ${res.meetings.length} meeting(s). ` +
+                                (res.unmatchedStudents.length ? `Unmatched students: ${res.unmatchedStudents.join(', ')}. ` : '') +
+                                (res.unmatchedProfessors.length ? `Unmatched professors: ${res.unmatchedProfessors.join(', ')}.` : '')
+                            );
+                        } catch (err) {
+                            setResult('Error running scheduler.');
+                        }
+                    }}
+                    title={selectedEvent ? 'Run the scheduler for the selected event' : 'Select an event to enable'}
+                    style={{ cursor: !selectedEvent || loadingData ? 'not-allowed' : 'pointer', opacity: !selectedEvent || loadingData ? 0.6 : 1 }}
                 >
-                    Scheduler Unavailable
+                    Run Scheduler
                 </button>
             </div>
+            {result && (
+                <div className="mt-4 p-4 bg-green-100 text-green-800 rounded">
+                    {result}
+                </div>
+            )}
             {selectedEvent && (
                 <>
                     {(() => {
