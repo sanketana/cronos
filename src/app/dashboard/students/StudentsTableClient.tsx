@@ -119,10 +119,10 @@ export default function StudentsTableClient({ students }: { students: Student[] 
                                         {role === 'admin' && (
                                             <>
                                                 <button className="secondary-btn" style={{ marginRight: '0.5rem' }} onClick={() => handleEditClick(s)}>Edit</button>
+                                                <button className="secondary-btn" style={{ marginRight: '0.5rem' }} onClick={() => handlePreferenceClick(s)}>Preference</button>
                                                 <button className="danger-btn" onClick={() => handleDelete(s.id)}>Delete</button>
                                             </>
                                         )}
-                                        <button className="secondary-btn" style={{ marginRight: '0.5rem' }} onClick={() => handlePreferenceClick(s)}>Preference</button>
                                     </td>
                                 </tr>
                             );

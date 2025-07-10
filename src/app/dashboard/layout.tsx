@@ -8,8 +8,8 @@ const allSidebarItems = [
     { label: 'Events', href: '/dashboard/events', roles: ['admin'] },
     { label: 'Faculty', href: '/dashboard/faculty', roles: ['admin'] },
     { label: 'Students', href: '/dashboard/students', roles: ['admin'] },
-    { label: 'Meetings', href: '/dashboard/meetings', roles: ['admin'] },
     { label: 'Scheduler', href: '/dashboard/scheduler', roles: ['admin'] },
+    { label: 'Meetings', href: '/dashboard/meetings', roles: ['admin'] },
     { label: 'Forms & Links', href: '/dashboard/forms', roles: ['admin'] },
     { label: 'Settings', href: '/dashboard/settings', roles: ['admin'] },
     // Self-serve links for faculty and students
