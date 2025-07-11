@@ -76,21 +76,6 @@ export default function SchedulerPage() {
         setStudents(eventStudents);
     }, [selectedEvent]);
 
-    // Helper to format a time string (e.g., '09:00') to '9 AM' or '3:30 PM'
-    function formatSlotTime(timeStr: string) {
-        if (!timeStr) return '';
-        const [h, m] = timeStr.split(':');
-        let hour = parseInt(h);
-        const minute = parseInt(m);
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        hour = hour % 12 || 12;
-        if (minute === 0) {
-            return `${hour} ${ampm}`;
-        } else {
-            return `${hour}:${m} ${ampm}`;
-        }
-    }
-
     // Helper to map IDs to names
     function getStudentName(id: string) {
         const s = students.find((s: Student) => s.id === id);
@@ -166,7 +151,7 @@ export default function SchedulerPage() {
                                 setLogs(logs => [...logs, 'Scheduler completed.']);
                             }
                             setResult(res);
-                        } catch (err) {
+                        } catch {
                             setLogs(logs => [...logs, 'Error running scheduler.']);
                             setResult({ error: 'Error running scheduler.' });
                         } finally {

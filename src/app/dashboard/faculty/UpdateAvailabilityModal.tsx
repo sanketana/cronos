@@ -98,32 +98,26 @@ export default function UpdateAvailabilityModal({ isOpen, onClose, faculty, onSu
 
     useEffect(() => {
         if (!eventId) return;
-        const ev = (events as any[]).find(e => e.id === eventId);
+        const ev = (events as unknown[]).find(e => (e as { id: string }).id === eventId) as { slot_len?: number; start_time?: string; end_time?: string; available_slots?: string[] | string } | undefined;
         if (ev) {
-            setSlotLen(ev.slot_len || 30);
-            setStartTime(ev.start_time || "");
-            setEndTime(ev.end_time || "");
+            setSlotLen(ev.slot_len ?? 30);
+            setStartTime(ev.start_time ?? "");
+            setEndTime(ev.end_time ?? "");
             let slotsFromEvent: string[] = [];
             if (ev.available_slots && ev.available_slots.length > 0) {
                 let ranges: string[];
-                if (Array.isArray(ev.available_slots)) {
-                    ranges = ev.available_slots;
-                } else if (typeof ev.available_slots === 'string') {
+                if (typeof ev.available_slots === 'string') {
                     try {
-                        // Try to parse as JSON array
                         ranges = JSON.parse(ev.available_slots);
-                        if (!Array.isArray(ranges)) {
-                            ranges = ev.available_slots.split(',').map((s: string) => s.trim()).filter(Boolean);
-                        }
                     } catch {
-                        ranges = ev.available_slots.split(',').map((s: string) => s.trim()).filter(Boolean);
+                        ranges = [];
                     }
                 } else {
-                    ranges = [];
+                    ranges = ev.available_slots;
                 }
-                slotsFromEvent = getSlotsFromRanges(ranges, ev.slot_len);
+                slotsFromEvent = getSlotsFromRanges(ranges, slotLen);
             } else {
-                slotsFromEvent = getTimeSlots(ev.start_time, ev.end_time, ev.slot_len);
+                slotsFromEvent = getTimeSlots(ev.start_time ?? '', ev.end_time ?? '', ev.slot_len ?? slotLen);
             }
             setAllSlots(slotsFromEvent);
             setAvailableSlots(slotsFromEvent); // select all by default
@@ -176,17 +170,14 @@ export default function UpdateAvailabilityModal({ isOpen, onClose, faculty, onSu
                         <label className="form-label font-bold">Select Event</label>
                         <select className="form-input rounded-md border-gray-300 focus:border-nw-purple focus:ring-nw-purple" value={eventId} onChange={e => setEventId(e.target.value)} required>
                             <option value="">Select Event</option>
-                            {(events as any[]).map(ev => (
-                                <option key={ev.id} value={ev.id}>
-                                    {ev.name} (
-                                    {typeof ev.date === 'string'
-                                        ? ev.date.slice(0, 10)
-                                        : ev.date instanceof Date
-                                            ? ev.date.toISOString().slice(0, 10)
-                                            : ''}
-                                    )
-                                </option>
-                            ))}
+                            {(events as unknown[]).map(ev => {
+                                const event = ev as { id: string; name: string; date?: string };
+                                return (
+                                    <option key={event.id} value={event.id}>
+                                        {event.name} ({event.date ? event.date.slice(0, 10) : ""})
+                                    </option>
+                                );
+                            })}
                         </select>
                     </div>
                     {eventId && (

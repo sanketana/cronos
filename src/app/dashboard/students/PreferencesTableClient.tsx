@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 
-interface Preference {
+export interface Preference {
     id: string;
     student_id: string;
     student_name: string;
