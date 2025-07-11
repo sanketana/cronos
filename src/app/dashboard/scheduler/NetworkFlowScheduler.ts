@@ -58,7 +58,7 @@ export class NetworkFlowScheduler implements IMatchingAlgorithm {
         }
         // students -> (student,professor) pairs
         for (const key of pairKeys) {
-            const [studentId, professorId] = key.split('|');
+            const [studentId] = key.split('|');
             this.addEdge(graph, studentNodes[studentId], pairNodes[key], 1); // only one meeting per pair
         }
         // (student,professor) pair -> (student,professor,slot) triplets
