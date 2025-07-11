@@ -13,6 +13,7 @@ export default function SchedulerPage() {
     const [students, setStudents] = useState<any[]>([]);
     const [loadingData, setLoadingData] = useState(true);
     const [result, setResult] = useState<string | null>(null);
+    const [selectedAlgorithm, setSelectedAlgorithm] = useState('Greedy');
 
     useEffect(() => {
         async function fetchData() {
@@ -86,6 +87,16 @@ export default function SchedulerPage() {
         return `${formatSlotTime(start)} - ${formatSlotTime(end)}`;
     }
 
+    // Helper to map IDs to names
+    function getStudentName(id: string) {
+        const s = students.find((s: any) => s.id === id);
+        return s ? s.name : id;
+    }
+    function getProfessorName(id: string) {
+        const p = professors.find((p: any) => p.id === id);
+        return p ? p.name : id;
+    }
+
     return (
         <div className="max-w-6xl mx-auto p-6">
             <h1 className="text-2xl font-bold mb-6">Scheduler</h1>
@@ -113,17 +124,30 @@ export default function SchedulerPage() {
                         </select>
                     )}
                 </div>
+                <div>
+                    <label className="block mb-2 font-medium">Select Algorithm</label>
+                    <select
+                        className="form-input"
+                        value={selectedAlgorithm}
+                        onChange={e => setSelectedAlgorithm(e.target.value)}
+                    >
+                        <option value="Greedy">Greedy</option>
+                        <option value="NetworkFlow">Network Flow</option>
+                    </select>
+                </div>
                 <button
                     className="primary-btn px-6 py-2 rounded disabled:opacity-50 mt-4 md:mt-0"
                     disabled={!selectedEvent || loadingData}
                     onClick={async () => {
                         setResult(null);
                         try {
-                            const res = await runSchedulerAction(selectedEvent);
+                            const res = await runSchedulerAction(selectedEvent, selectedAlgorithm);
+                            const unmatchedStudentNames = res.unmatchedStudents.map(getStudentName).join(', ');
+                            const unmatchedProfessorNames = res.unmatchedProfessors.map(getProfessorName).join(', ');
                             setResult(
                                 `Scheduled ${res.meetings.length} meeting(s). ` +
-                                (res.unmatchedStudents.length ? `Unmatched students: ${res.unmatchedStudents.join(', ')}. ` : '') +
-                                (res.unmatchedProfessors.length ? `Unmatched professors: ${res.unmatchedProfessors.join(', ')}.` : '')
+                                (res.unmatchedStudents.length ? `Unmatched students: ${unmatchedStudentNames}. ` : '') +
+                                (res.unmatchedProfessors.length ? `Unmatched professors: ${unmatchedProfessorNames}.` : '')
                             );
                         } catch (err) {
                             setResult('Error running scheduler.');

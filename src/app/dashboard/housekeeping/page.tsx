@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { deleteMeetingsByRunId, getAllSchedulerRuns, getMeetingCountByRunId, deleteAllMeetings } from './housekeepingActions';
 
 interface RunMeta {
     id: number;
@@ -19,17 +20,14 @@ export default function HousekeepingPage() {
     useEffect(() => {
         async function fetchRunsAndCounts() {
             setLoadingRuns(true);
-            const res = await fetch("/api/housekeeping/get-runs");
-            const data = await res.json();
-            const runs: RunMeta[] = (data.runs || []).map((r: any) => ({ id: r.id, run_time: r.run_time }));
+            const runs = await getAllSchedulerRuns();
             setRuns(runs);
             // Fetch meeting counts for all runs in parallel
             const counts: Record<number, number> = {};
             await Promise.all(
                 runs.map(async (run) => {
-                    const res = await fetch(`/api/housekeeping/get-meeting-count?runId=${run.id}`);
-                    const data = await res.json();
-                    counts[run.id] = data.count ?? 0;
+                    const count = await getMeetingCountByRunId(run.id);
+                    counts[run.id] = count ?? 0;
                 })
             );
             setMeetingCounts(counts);
@@ -50,21 +48,28 @@ export default function HousekeepingPage() {
         setLoading(true);
         setMessage("");
         try {
-            const res = await fetch("/api/housekeeping/delete-meetings", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ runId: selectedRunId }),
-            });
-            const data = await res.json();
-            if (res.ok) {
-                setMessage(`Deleted ${data.deletedCount} meetings for run ID ${selectedRunId}.`);
-                setMeetingCount(0);
-                setMeetingCounts((prev) => ({ ...prev, [Number(selectedRunId)]: 0 }));
-            } else {
-                setMessage(data.error || "Failed to delete meetings.");
-            }
+            const deletedCount = await deleteMeetingsByRunId(Number(selectedRunId));
+            setMessage(`Deleted ${deletedCount} meetings for run ID ${selectedRunId}.`);
+            setMeetingCount(0);
+            setMeetingCounts((prev) => ({ ...prev, [Number(selectedRunId)]: 0 }));
         } catch (err) {
             setMessage("Error deleting meetings.");
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function handleDeleteAll() {
+        if (!window.confirm('Do you really want to delete all meetings?')) return;
+        setLoading(true);
+        setMessage("");
+        try {
+            const deletedCount = await deleteAllMeetings();
+            setMessage(`Deleted ${deletedCount} meetings (all meetings deleted).`);
+            setMeetingCount(0);
+            setMeetingCounts({});
+        } catch (err) {
+            setMessage("Error deleting all meetings.");
         } finally {
             setLoading(false);
         }
@@ -104,13 +109,23 @@ export default function HousekeepingPage() {
                     {loadingCount ? "..." : meetingCount}
                 </div>
             )}
-            <button
-                className="primary-btn px-6 py-2 rounded disabled:opacity-50"
-                disabled={!selectedRunId || loading || meetingCount === 0}
-                onClick={handleDelete}
-            >
-                {loading ? "Deleting..." : "Delete Meetings"}
-            </button>
+            <div className="flex flex-col items-start gap-3 mt-2">
+                <button
+                    className="primary-btn px-6 py-2 rounded disabled:opacity-50"
+                    disabled={!selectedRunId || loading || meetingCount === 0}
+                    onClick={handleDelete}
+                >
+                    {loading ? "Deleting..." : "Delete Meetings"}
+                </button>
+                <button
+                    className="danger-btn px-6 py-2 rounded disabled:opacity-50"
+                    style={{ minWidth: 150, fontSize: '1rem', height: '40px', lineHeight: '1.5' }}
+                    disabled={loading}
+                    onClick={handleDeleteAll}
+                >
+                    {loading ? "Deleting..." : "Delete All Meetings"}
+                </button>
+            </div>
             {message && <div className="mt-4 text-lg font-semibold">{message}</div>}
         </div>
     );

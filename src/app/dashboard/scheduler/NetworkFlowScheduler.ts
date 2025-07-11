@@ -11,33 +11,109 @@ interface Edge {
 
 export class NetworkFlowScheduler implements IMatchingAlgorithm {
     async computeMatches(input: MatchingInput): Promise<MatchingResult> {
-        // Greedy matching: for each student, for each preferred professor, schedule in first available slot
-        const meetings: ScheduledMeeting[] = [];
-        const usedSlots = new Set<string>(); // key: studentId|slot or professorId|slot
+        // Build a layered graph with (student, professor) pair nodes to enforce only one meeting per pair
+        // Nodes: source, students, (student,professor) pairs, (student,professor,slot) triplets, professors, sink
+        const source = 0;
+        let nodeIdx = 1;
+        const studentNodes: Record<string, number> = {};
+        for (const s of input.students) studentNodes[s.id] = nodeIdx++;
+        // (student, professor) pair nodes
+        type Pair = { studentId: string; professorId: string };
+        const pairKeys: string[] = [];
+        const pairNodes: Record<string, number> = {};
         for (const student of input.students) {
             for (const professorId of student.preferences) {
-                // Find the professor object
+                const key = `${student.id}|${professorId}`;
+                if (!(key in pairNodes)) {
+                    pairNodes[key] = nodeIdx++;
+                    pairKeys.push(key);
+                }
+            }
+        }
+        // (student, professor, slot) triplet nodes
+        type Triplet = { studentId: string; professorId: string; slot: string };
+        const triplets: Triplet[] = [];
+        const tripletNodes: Record<string, number> = {};
+        for (const student of input.students) {
+            for (const professorId of student.preferences) {
                 const professor = input.professors.find(p => p.id === professorId);
                 if (!professor) continue;
-                // Find the first slot where both are available and neither is booked
                 const commonSlots = student.availableSlots.filter(slot => professor.availableSlots.includes(slot));
-                let scheduled = false;
                 for (const slot of commonSlots) {
-                    const studentSlotKey = `${student.id}|${slot}`;
-                    const professorSlotKey = `${professor.id}|${slot}`;
-                    if (!usedSlots.has(studentSlotKey) && !usedSlots.has(professorSlotKey)) {
-                        meetings.push({
-                            eventId: input.eventId,
-                            professorId: professor.id,
-                            studentId: student.id,
-                            slot,
-                        });
-                        usedSlots.add(studentSlotKey);
-                        usedSlots.add(professorSlotKey);
-                        scheduled = true;
-                        break; // Only one meeting per student-professor pair
-                    }
+                    const key = `${student.id}|${professorId}|${slot}`;
+                    tripletNodes[key] = nodeIdx++;
+                    triplets.push({ studentId: student.id, professorId, slot });
                 }
+            }
+        }
+        const professorNodes: Record<string, number> = {};
+        for (const p of input.professors) professorNodes[p.id] = nodeIdx++;
+        const sink = nodeIdx++;
+        // Build graph
+        const N = nodeIdx;
+        const graph: Edge[][] = Array.from({ length: N }, () => []);
+        // source -> students
+        for (const s of input.students) {
+            this.addEdge(graph, source, studentNodes[s.id], input.professors.length); // as many as preferences
+        }
+        // students -> (student,professor) pairs
+        for (const key of pairKeys) {
+            const [studentId, professorId] = key.split('|');
+            this.addEdge(graph, studentNodes[studentId], pairNodes[key], 1); // only one meeting per pair
+        }
+        // (student,professor) pair -> (student,professor,slot) triplets
+        for (const t of triplets) {
+            const pairKey = `${t.studentId}|${t.professorId}`;
+            const tripletKey = `${t.studentId}|${t.professorId}|${t.slot}`;
+            this.addEdge(graph, pairNodes[pairKey], tripletNodes[tripletKey], 1);
+        }
+        // (student,professor,slot) triplet -> professor
+        for (const t of triplets) {
+            const tripletKey = `${t.studentId}|${t.professorId}|${t.slot}`;
+            const pIdx = professorNodes[t.professorId];
+            this.addEdge(graph, tripletNodes[tripletKey], pIdx, 1);
+        }
+        // professors -> sink
+        for (const p of input.professors) {
+            this.addEdge(graph, professorNodes[p.id], sink, input.students.length); // as many as students
+        }
+        // Edmonds-Karp
+        let flow = 0;
+        const parent: { v: number; e: number }[] = Array(N);
+        while (this.bfs(graph, source, sink, parent)) {
+            // Find min capacity along the path
+            let pathCap = Infinity;
+            for (let v = sink; v !== source;) {
+                const u = parent[v].v;
+                const eIdx = parent[v].e;
+                pathCap = Math.min(pathCap, graph[u][eIdx].cap);
+                v = u;
+            }
+            // Update capacities
+            for (let v = sink; v !== source;) {
+                const u = parent[v].v;
+                const eIdx = parent[v].e;
+                graph[u][eIdx].cap -= pathCap;
+                const rev = graph[u][eIdx].rev;
+                graph[v][rev].cap += pathCap;
+                v = u;
+            }
+            flow += pathCap;
+        }
+        // Extract matches
+        const meetings: ScheduledMeeting[] = [];
+        for (const t of triplets) {
+            const pairKey = `${t.studentId}|${t.professorId}`;
+            const tripletKey = `${t.studentId}|${t.professorId}|${t.slot}`;
+            // Find the edge from pairNode to tripletNode
+            const edge = graph[pairNodes[pairKey]].find(e => e.to === tripletNodes[tripletKey]);
+            if (edge && edge.cap === 0) { // used
+                meetings.push({
+                    eventId: input.eventId,
+                    professorId: t.professorId,
+                    studentId: t.studentId,
+                    slot: t.slot,
+                });
             }
         }
         const matchedStudentIds = new Set(meetings.map(m => m.studentId));
