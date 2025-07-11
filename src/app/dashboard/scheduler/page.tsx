@@ -5,15 +5,20 @@ import { getAllEvents } from "../actions";
 import { getAllAvailabilities } from "../faculty/actions";
 import { getAllPreferences } from "../students/actions";
 import { runSchedulerAction } from './actions';
+import type { MatchingResult } from './IMatchingAlgorithm';
+
+interface Event { id: string; name: string; date?: string; start_time?: string; end_time?: string; slot_len?: number; }
+interface Professor { id: string; name: string; email: string; department: string; available_slots: string[]; }
+interface Student { id: string; name: string; email: string; department: string; available_slots: string[]; }
 
 export default function SchedulerPage() {
-    const [events, setEvents] = useState<any[]>([]);
+    const [events, setEvents] = useState<Event[]>([]);
     const [selectedEvent, setSelectedEvent] = useState("");
-    const [professors, setProfessors] = useState<any[]>([]);
-    const [students, setStudents] = useState<any[]>([]);
+    const [professors, setProfessors] = useState<Professor[]>([]);
+    const [students, setStudents] = useState<Student[]>([]);
     const [loadingData, setLoadingData] = useState(true);
     const [scheduling, setScheduling] = useState(false); // NEW: scheduling state
-    const [result, setResult] = useState<any | null>(null); // Store full result object
+    const [result, setResult] = useState<MatchingResult | null>(null); // Store full result object
     const [selectedAlgorithm, setSelectedAlgorithm] = useState('Greedy');
     const [logs, setLogs] = useState<string[]>([]); // For user-friendly logs
 
@@ -32,8 +37,8 @@ export default function SchedulerPage() {
                 getAllPreferences(),
             ]);
             setEvents(eventsData);
-            (window as any).__availabilities = availabilities;
-            (window as any).__preferences = preferences;
+            (window as unknown as { __availabilities?: any[]; __preferences?: any[] }).__availabilities = availabilities;
+            (window as unknown as { __availabilities?: any[]; __preferences?: any[] }).__preferences = preferences;
             setLoadingData(false);
         }
         fetchData();
@@ -45,7 +50,7 @@ export default function SchedulerPage() {
             setStudents([]);
             return;
         }
-        const availabilities = (window as any).__availabilities || [];
+        const availabilities = (window as unknown as { __availabilities?: any[] }).__availabilities || [];
         const eventProfs = availabilities
             .filter((a: any) => a.event_id === selectedEvent)
             .map((a: any) => {
@@ -59,7 +64,7 @@ export default function SchedulerPage() {
                 };
             });
         setProfessors(eventProfs);
-        const preferences = (window as any).__preferences || [];
+        const preferences = (window as unknown as { __preferences?: any[] }).__preferences || [];
         const eventStudents = preferences
             .filter((p: any) => p.event_id === selectedEvent)
             .map((p: any) => {
@@ -97,11 +102,11 @@ export default function SchedulerPage() {
 
     // Helper to map IDs to names
     function getStudentName(id: string) {
-        const s = students.find((s: any) => s.id === id);
+        const s = students.find((s: Student) => s.id === id);
         return s ? s.name : id;
     }
     function getProfessorName(id: string) {
-        const p = professors.find((p: any) => p.id === id);
+        const p = professors.find((p: Professor) => p.id === id);
         return p ? p.name : id;
     }
 
@@ -164,8 +169,8 @@ export default function SchedulerPage() {
                         try {
                             // Do not show 'Scheduler started...' log to user
                             const res = await runSchedulerAction(selectedEvent, selectedAlgorithm);
-                            if ((res as any)?.logs && Array.isArray((res as any).logs)) {
-                                setLogs((res as any).logs);
+                            if ((res as MatchingResult)?.logs && Array.isArray((res as MatchingResult).logs)) {
+                                setLogs((res as MatchingResult).logs);
                             } else {
                                 setLogs(logs => [...logs, 'Scheduler completed.']);
                             }

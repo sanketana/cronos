@@ -5,7 +5,7 @@ import AddEditStudentModal from './AddEditStudentModal';
 import UpdatePreferenceModal from './UpdatePreferenceModal';
 import { createStudent, updateStudent, deleteStudent } from './actions';
 
-interface Student {
+export interface Student {
     id: string;
     name: string;
     email: string;

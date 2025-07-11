@@ -2,8 +2,10 @@
 import React, { useState } from 'react';
 import FacultyTableClient from './FacultyTableClient';
 import AvailabilitiesTableClient from './AvailabilitiesTableClient';
+import type { Faculty } from './FacultyTableClient';
+import type { Availability } from './AvailabilitiesTableClient';
 
-export default function FacultyTabsClient({ faculty, availabilities }: { faculty: any[]; availabilities: any[] }) {
+export default function FacultyTabsClient({ faculty, availabilities }: { faculty: Faculty[]; availabilities: Availability[] }) {
     const [tab, setTab] = useState<'faculty' | 'availabilities'>('faculty');
     return (
         <div>

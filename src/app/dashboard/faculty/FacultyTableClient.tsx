@@ -5,7 +5,7 @@ import AddEditFacultyModal from './AddEditFacultyModal';
 import { createFaculty, updateFaculty, deleteFaculty } from './actions';
 import UpdateAvailabilityModal from './UpdateAvailabilityModal';
 
-interface Faculty {
+export interface Faculty {
     id: string;
     name: string;
     email: string;

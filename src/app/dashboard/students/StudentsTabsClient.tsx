@@ -2,8 +2,9 @@
 import React, { useState } from 'react';
 import StudentsTableClient from './StudentsTableClient';
 import PreferencesTableClient from './PreferencesTableClient';
-
-export default function StudentsTabsClient({ students, preferences, faculty }: { students: any[]; preferences: any[]; faculty: { id: string; name: string }[] }) {
+import type { Student } from './StudentsTableClient';
+// If Preference is defined elsewhere, import it. Otherwise, define and export it in a shared file.
+export default function StudentsTabsClient({ students, preferences, faculty }: { students: Student[]; preferences: any[]; faculty: { id: string; name: string }[] }) {
     const [tab, setTab] = useState<'students' | 'preferences'>('students');
     return (
         <div>

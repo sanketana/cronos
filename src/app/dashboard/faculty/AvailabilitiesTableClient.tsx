@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 
-interface Availability {
+export interface Availability {
     id: string;
     faculty_id: string;
     faculty_name: string;
