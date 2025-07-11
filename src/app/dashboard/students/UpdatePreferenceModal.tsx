@@ -167,8 +167,8 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
             window.location.reload();
         } catch (err: unknown) {
             setLoading(false);
-            if (typeof err === 'object' && err && 'message' in err && typeof (err as any).message === 'string') {
-                setError((err as any).message);
+            if (typeof err === 'object' && err && 'message' in err && typeof (err as { message?: unknown }).message === 'string') {
+                setError((err as { message: string }).message);
             } else {
                 setError('Failed to save. Please try again.');
             }
