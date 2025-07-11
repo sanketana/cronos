@@ -38,14 +38,15 @@ export async function prepareMatchingInput(eventId: string): Promise<MatchingInp
 
     // Professors
     const professors = availabilities
-        .filter((a: any) => a.event_id === eventId)
-        .map((a: any) => {
+        .filter((a: unknown) => (a as { event_id: string }).event_id === eventId)
+        .map((a: unknown) => {
+            const av = a as { faculty_id: string; available_slots?: string[] | string };
             let availableSlots: string[] = [];
-            if (a.available_slots) {
-                availableSlots = typeof a.available_slots === 'string' ? JSON.parse(a.available_slots) : a.available_slots;
+            if (av.available_slots) {
+                availableSlots = typeof av.available_slots === 'string' ? JSON.parse(av.available_slots) : av.available_slots;
             }
             return {
-                id: a.faculty_id,
+                id: av.faculty_id,
                 availableSlots,
             };
         });

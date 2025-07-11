@@ -67,29 +67,6 @@ export async function upsertAvailability({ facultyId, eventId, slots, preference
     await client.end();
 }
 
-// Helper to merge overlapping/adjacent time ranges (e.g., ["09:00-09:30", "09:30-10:00"] => ["09:00-10:00"])
-function mergeTimeRanges(slots: string[]): string[] {
-    if (!slots.length) return [];
-    // Parse and sort slots
-    const ranges = slots.map(s => s.split('-')).map(([start, end]) => [start, end]);
-    ranges.sort((a, b) => a[0].localeCompare(b[0]));
-    const merged: [string, string][] = [];
-    for (const [start, end] of ranges) {
-        if (!merged.length) {
-            merged.push([start, end]);
-        } else {
-            const last = merged[merged.length - 1];
-            if (last[1] >= start) {
-                // Overlapping or adjacent
-                last[1] = end > last[1] ? end : last[1];
-            } else {
-                merged.push([start, end]);
-            }
-        }
-    }
-    return merged.map(([start, end]) => `${start}-${end}`);
-}
-
 export async function getAllAvailabilities() {
     const client = new Client({
         connectionString: process.env.NEON_POSTGRES_URL,

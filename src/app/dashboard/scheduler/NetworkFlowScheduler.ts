@@ -6,7 +6,7 @@ interface Edge {
     rev: number;
     cap: number;
     originalCap: number;
-    meta?: any;
+    meta?: unknown;
 }
 
 export class NetworkFlowScheduler implements IMatchingAlgorithm {
@@ -19,7 +19,6 @@ export class NetworkFlowScheduler implements IMatchingAlgorithm {
         const studentNodes: Record<string, number> = {};
         for (const s of input.students) studentNodes[s.id] = nodeIdx++;
         // (student, professor) pair nodes
-        type Pair = { studentId: string; professorId: string };
         const pairKeys: string[] = [];
         const pairNodes: Record<string, number> = {};
         for (const student of input.students) {
@@ -130,13 +129,13 @@ export class NetworkFlowScheduler implements IMatchingAlgorithm {
         return { meetings, unmatchedStudents, unmatchedProfessors };
     }
 
-    private addEdge(graph: Edge[][], from: number, to: number, cap: number, meta?: any) {
+    private addEdge(graph: Edge[][], from: number, to: number, cap: number, meta?: unknown) {
         graph[from].push({ to, rev: graph[to].length, cap, originalCap: cap, meta });
         graph[to].push({ to: from, rev: graph[from].length - 1, cap: 0, originalCap: 0 });
     }
 
     private bfs(graph: Edge[][], s: number, t: number, parent: { v: number, e: number }[]): boolean {
-        parent.fill(null as any);
+        parent.fill(null as unknown as { v: number, e: number });
         const queue: number[] = [s];
         parent[s] = { v: -1, e: -1 };
         while (queue.length) {

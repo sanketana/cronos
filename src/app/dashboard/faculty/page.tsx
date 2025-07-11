@@ -14,14 +14,14 @@ async function getSessionUser() {
     }
 }
 
-async function getFacultyData(user: any) {
+async function getFacultyData(user: unknown) {
     const client = new Client({ connectionString: process.env.NEON_POSTGRES_URL });
     await client.connect();
     let faculty = [];
     let availabilities = [];
-    if (user?.role === 'faculty') {
+    if ((user as any)?.role === 'faculty') {
         // Only fetch this professor's data and availabilities, with joins for event/faculty info
-        const facultyRes = await client.query('SELECT * FROM users WHERE id = $1', [user.userId]);
+        const facultyRes = await client.query('SELECT * FROM users WHERE id = $1', [(user as any).userId]);
         faculty = facultyRes.rows;
         const availRes = await client.query(`
             SELECT a.*, u.name as faculty_name, u.email as faculty_email, u.department as faculty_department, e.name as event_name, COALESCE(e.date::text, '') as event_date, e.start_time, e.end_time, e.slot_len
@@ -30,7 +30,7 @@ async function getFacultyData(user: any) {
             LEFT JOIN events e ON a.event_id = e.id
             WHERE a.faculty_id = $1
             ORDER BY a.updated_at DESC
-        `, [user.userId]);
+        `, [(user as any).userId]);
         availabilities = availRes.rows;
     } else {
         // Admin: fetch all

@@ -70,7 +70,7 @@ export default function EventsTableClient({ events }: { events: Event[] }) {
                     <tbody>
                         {events.map((event: Event) => {
                             let dateStr = '';
-                            let dateForEdit = (event.date && event.date.length >= 10) ? event.date.slice(0, 10) : '';
+                            const dateForEdit = (event.date && event.date.length >= 10) ? event.date.slice(0, 10) : '';
                             try {
                                 const dateObj = new Date(event.date ?? '');
                                 dateStr = isNaN(dateObj.getTime())

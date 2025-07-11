@@ -38,15 +38,6 @@ export default function EventModal({ isOpen, onClose, onSubmit, initialValues, s
         await onSubmit(formData);
     }
 
-    const formatTimeAMPM = (time: string) => {
-        const [hours, minutes] = time.split(':');
-        const hour = parseInt(hours, 10);
-        const minute = parseInt(minutes, 10);
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        const displayHour = hour % 12 || 12;
-        return `${displayHour}:${minute.toString().padStart(2, '0')} ${ampm}`;
-    };
-
     return (
         <div className="modal-overlay">
             <div className="modal" style={{ minWidth: 400, maxWidth: 600 }}>

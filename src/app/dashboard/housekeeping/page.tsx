@@ -1,11 +1,6 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { deleteAllMeetings } from './housekeepingActions';
-
-interface RunMeta {
-    id: number;
-    run_time: string;
-}
 
 export default function HousekeepingPage() {
     const [loading, setLoading] = useState(false);
@@ -18,7 +13,7 @@ export default function HousekeepingPage() {
         try {
             const deletedCount = await deleteAllMeetings();
             setMessage(`Deleted ${deletedCount} meetings (all meetings deleted).`);
-        } catch (err) {
+        } catch {
             setMessage("Error deleting all meetings.");
         } finally {
             setLoading(false);

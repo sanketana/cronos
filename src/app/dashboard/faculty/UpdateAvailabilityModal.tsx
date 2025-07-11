@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { getAllEvents } from "../actions";
-import { upsertAvailability, getAvailability, getAllAvailabilitiesForFaculty } from "./actions";
+import { upsertAvailability, getAllAvailabilitiesForFaculty } from "./actions";
 
 interface Props {
     isOpen: boolean;
@@ -13,8 +13,8 @@ interface Props {
 function getTimeSlots(start: string, end: string, slotLen: number): string[] {
     // start, end: "HH:mm", slotLen: minutes
     const slots: string[] = [];
-    let [h, m] = start.split(":").map(Number);
-    let [eh, em] = end.split(":").map(Number);
+    const [h, m] = start.split(":").map(Number);
+    const [eh, em] = end.split(":").map(Number);
     let cur = h * 60 + m;
     const endMin = eh * 60 + em;
     while (cur + slotLen <= endMin) {
@@ -31,11 +31,11 @@ function getTimeSlots(start: string, end: string, slotLen: number): string[] {
 function formatTime12h(timeStr: string) {
     if (!timeStr) return '';
     const [h, m] = timeStr.split(":");
-    let hour = parseInt(h, 10);
+    const hour = parseInt(h, 10);
     const minute = parseInt(m, 10);
     const ampm = hour >= 12 ? "PM" : "AM";
-    hour = hour % 12 === 0 ? 12 : hour % 12;
-    return `${hour}:${minute.toString().padStart(2, '0')} ${ampm}`;
+    const finalHour = hour % 12 === 0 ? 12 : hour % 12;
+    return `${finalHour}:${minute.toString().padStart(2, '0')} ${ampm}`;
 }
 
 // Helper to generate slots within a range
@@ -43,8 +43,8 @@ function getSlotsFromRanges(ranges: string[], slotLen: number): string[] {
     const slots: string[] = [];
     for (const range of ranges) {
         const [start, end] = range.split('-').map(s => s.trim());
-        let [h, m] = start.split(":").map(Number);
-        let [eh, em] = end.split(":").map(Number);
+        const [h, m] = start.split(":").map(Number);
+        const [eh, em] = end.split(":").map(Number);
         let cur = h * 60 + m;
         const endMin = eh * 60 + em;
         while (cur + slotLen <= endMin) {
@@ -62,13 +62,10 @@ function getSlotsFromRanges(ranges: string[], slotLen: number): string[] {
 export default function UpdateAvailabilityModal({ isOpen, onClose, faculty, onSubmit }: Props) {
     const [eventId, setEventId] = useState("");
     const [events, setEvents] = useState<any[]>([]);
-    const [unavailableSlots, setUnavailableSlots] = useState<string[]>([]);
     const [slotLen, setSlotLen] = useState(30);
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState("");
-    const [eventDate, setEventDate] = useState("");
     const [allSlots, setAllSlots] = useState<string[]>([]);
-    const [selectedSlot, setSelectedSlot] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [facultyAvailabilities, setFacultyAvailabilities] = useState<Record<string, string[]>>({});
@@ -106,7 +103,6 @@ export default function UpdateAvailabilityModal({ isOpen, onClose, faculty, onSu
             setSlotLen(ev.slot_len || 30);
             setStartTime(ev.start_time || "");
             setEndTime(ev.end_time || "");
-            setEventDate(typeof ev.date === 'string' ? ev.date.slice(0, 10) : ev.date instanceof Date ? ev.date.toISOString().slice(0, 10) : '');
             let slotsFromEvent: string[] = [];
             if (ev.available_slots && ev.available_slots.length > 0) {
                 let ranges: string[];
@@ -130,7 +126,6 @@ export default function UpdateAvailabilityModal({ isOpen, onClose, faculty, onSu
                 slotsFromEvent = getTimeSlots(ev.start_time, ev.end_time, ev.slot_len);
             }
             setAllSlots(slotsFromEvent);
-            setSelectedSlot("");
             setAvailableSlots(slotsFromEvent); // select all by default
         }
     }, [eventId, facultyAvailabilities, events]);

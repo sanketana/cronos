@@ -115,13 +115,6 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
                     </thead>
                     <tbody>
                         {faculty.map((f: Faculty) => {
-                            let createdAtStr = '';
-                            try {
-                                const createdAtObj = new Date(f.created_at ?? '');
-                                createdAtStr = isNaN(createdAtObj.getTime()) ? String(f.created_at) : createdAtObj.toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-                            } catch {
-                                createdAtStr = String(f.created_at);
-                            }
                             return (
                                 <tr key={f.id}>
                                     <td>{f.name}</td>
