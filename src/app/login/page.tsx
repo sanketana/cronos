@@ -41,7 +41,7 @@ export default function LoginPage() {
                 else if (data.role === "student") router.push("/dashboard/students");
                 else router.push("/dashboard");
             }
-        } catch (err) {
+        } catch {
             setError("Login failed. Please try again.");
         } finally {
             setLoading(false);

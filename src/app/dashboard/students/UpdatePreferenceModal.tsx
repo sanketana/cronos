@@ -21,7 +21,6 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [allSlots, setAllSlots] = useState<string[]>([]);
-    const [studentPrefs, setStudentPrefs] = useState<Record<string, string[]>>({});
     const [availableSlots, setAvailableSlots] = useState<string[]>([]);
     const [tab, setTab] = useState<'preferences' | 'slots'>('preferences');
     const [showErrorPopup, setShowErrorPopup] = useState(false);
@@ -55,8 +54,8 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
         const slots: string[] = [];
         for (const range of ranges) {
             const [start, end] = range.split('-').map(s => s.trim());
-            let [h, m] = start.split(":").map(Number);
-            let [eh, em] = end.split(":").map(Number);
+            const [h, m] = start.split(":").map(Number);
+            const [eh, em] = end.split(":").map(Number);
             let cur = h * 60 + m;
             const endMin = eh * 60 + em;
             while (cur + slotLen <= endMin) {
@@ -82,7 +81,7 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
                         prefMap[row.event_id] = Array.isArray(row.unavailable_slots) ? row.unavailable_slots : [];
                     }
                 }
-                setStudentPrefs(prefMap);
+                // setStudentPrefs(prefMap); // This line is removed
             }
         }
         fetchPrefs();
@@ -138,13 +137,6 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
         );
     }
 
-    function canProceedToSlots() {
-        const selected = professorChoices.filter(Boolean) as string[];
-        if (selected.length < 3) return false;
-        if (new Set(selected).size !== selected.length) return false;
-        return true;
-    }
-
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         setError(null);
@@ -173,9 +165,13 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
             setLoading(false);
             onClose();
             window.location.reload();
-        } catch (err: any) {
+        } catch (err: unknown) {
             setLoading(false);
-            setError(err?.message || 'Failed to save. Please try again.');
+            if (typeof err === 'object' && err && 'message' in err && typeof (err as any).message === 'string') {
+                setError((err as any).message);
+            } else {
+                setError('Failed to save. Please try again.');
+            }
             setShowErrorPopup(true);
         }
     }

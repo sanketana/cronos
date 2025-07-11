@@ -14,15 +14,15 @@ async function getSessionUser() {
     }
 }
 
-async function getStudentData(user: any) {
+async function getStudentData(user: unknown) {
     const client = new Client({ connectionString: process.env.NEON_POSTGRES_URL });
     await client.connect();
     let students = [];
     let preferences = [];
     let faculty = [];
-    if (user?.role === 'student') {
+    if (user && typeof user === 'object' && (user as { role?: string }).role === 'student') {
         // Only fetch this student's data and preferences, with joins for names/emails
-        const studentRes = await client.query('SELECT * FROM users WHERE id = $1', [user.userId]);
+        const studentRes = await client.query('SELECT * FROM users WHERE id = $1', [(user as { userId: string }).userId]);
         students = studentRes.rows;
         const prefRes = await client.query(`
             SELECT p.*, u.name as student_name, u.email as student_email, e.name as event_name, e.date as event_date
@@ -30,7 +30,7 @@ async function getStudentData(user: any) {
             LEFT JOIN users u ON p.student_id = u.id
             LEFT JOIN events e ON p.event_id = e.id
             WHERE p.student_id = $1
-        `, [user.userId]);
+        `, [(user as { userId: string }).userId]);
         preferences = prefRes.rows;
     } else {
         // Admin: fetch all, with joins for names/emails

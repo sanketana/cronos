@@ -41,7 +41,7 @@ export default function SetPasswordPage() {
             else if (sessionData.role === "professor") router.push("/dashboard/faculty");
             else if (sessionData.role === "student") router.push("/dashboard/students");
             else router.push("/dashboard");
-        } catch (err) {
+        } catch {
             setError("Failed to set password. Please try again.");
         } finally {
             setLoading(false);

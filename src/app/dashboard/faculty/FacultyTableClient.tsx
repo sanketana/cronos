@@ -77,7 +77,7 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
         setAvailabilityModalOpen(true);
     }
 
-    function handleAvailabilitySubmit(data: { eventId: string; slots: string[]; preferences: string }) {
+    function handleAvailabilitySubmit() {
         // After saving, refresh the page to update availabilities
         router.refresh();
     }

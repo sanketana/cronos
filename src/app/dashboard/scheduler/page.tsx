@@ -145,8 +145,8 @@ export default function SchedulerPage() {
                         try {
                             // Do not show 'Scheduler started...' log to user
                             const res = await runSchedulerAction(selectedEvent, selectedAlgorithm);
-                            if ('logs' in res && Array.isArray((res as any).logs)) {
-                                setLogs((res as any).logs);
+                            if ('logs' in res && Array.isArray((res as { logs?: unknown }).logs)) {
+                                setLogs((res as { logs: string[] }).logs);
                             } else {
                                 setLogs(logs => [...logs, 'Scheduler completed.']);
                             }

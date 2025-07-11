@@ -122,7 +122,7 @@ export default function UpdateAvailabilityModal({ isOpen, onClose, faculty, onSu
             setAllSlots(slotsFromEvent);
             setAvailableSlots(slotsFromEvent); // select all by default
         }
-    }, [eventId, facultyAvailabilities, events]);
+    }, [eventId, facultyAvailabilities, events, slotLen]);
 
     useEffect(() => {
         if (selectAllRef.current) {
