@@ -126,12 +126,12 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
                                             {role === 'admin' && (
                                                 <>
                                                     <button className="secondary-btn" onClick={() => handleEditClick(f)}>Edit</button>
+                                                    <button className="secondary-btn" onClick={() => handleUpdateAvailabilityClick(f)}>
+                                                        Availability
+                                                    </button>
                                                     <button className="danger-btn" onClick={() => handleDelete(f.id)}>Delete</button>
                                                 </>
                                             )}
-                                            <button className="secondary-btn" onClick={() => handleUpdateAvailabilityClick(f)}>
-                                                Availability
-                                            </button>
                                         </div>
                                     </td>
                                 </tr>
