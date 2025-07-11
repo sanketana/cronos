@@ -61,7 +61,7 @@ function getSlotsFromRanges(ranges: string[], slotLen: number): string[] {
 
 export default function UpdateAvailabilityModal({ isOpen, onClose, faculty, onSubmit }: Props) {
     const [eventId, setEventId] = useState("");
-    const [events, setEvents] = useState<any[]>([]);
+    const [events, setEvents] = useState<unknown[]>([]);
     const [slotLen, setSlotLen] = useState(30);
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState("");
@@ -98,7 +98,7 @@ export default function UpdateAvailabilityModal({ isOpen, onClose, faculty, onSu
 
     useEffect(() => {
         if (!eventId) return;
-        const ev = events.find(e => e.id === eventId);
+        const ev = (events as any[]).find(e => e.id === eventId);
         if (ev) {
             setSlotLen(ev.slot_len || 30);
             setStartTime(ev.start_time || "");
@@ -176,7 +176,7 @@ export default function UpdateAvailabilityModal({ isOpen, onClose, faculty, onSu
                         <label className="form-label font-bold">Select Event</label>
                         <select className="form-input rounded-md border-gray-300 focus:border-nw-purple focus:ring-nw-purple" value={eventId} onChange={e => setEventId(e.target.value)} required>
                             <option value="">Select Event</option>
-                            {events.map(ev => (
+                            {(events as any[]).map(ev => (
                                 <option key={ev.id} value={ev.id}>
                                     {ev.name} (
                                     {typeof ev.date === 'string'

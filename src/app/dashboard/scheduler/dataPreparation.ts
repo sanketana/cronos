@@ -53,15 +53,16 @@ export async function prepareMatchingInput(eventId: string): Promise<MatchingInp
 
     // Students
     const students = preferences
-        .filter((p: any) => p.event_id === eventId)
-        .map((p: any) => {
+        .filter((p: unknown) => (p as { event_id: string }).event_id === eventId)
+        .map((p: unknown) => {
+            const pref = p as { student_id: string; professor_ids: string[] | string; available_slots?: string[] | string };
             let availableSlots: string[] = [];
-            if (p.available_slots) {
-                availableSlots = typeof p.available_slots === 'string' ? JSON.parse(p.available_slots) : p.available_slots;
+            if (pref.available_slots) {
+                availableSlots = typeof pref.available_slots === 'string' ? JSON.parse(pref.available_slots) : pref.available_slots;
             }
             return {
-                id: p.student_id,
-                preferences: (typeof p.professor_ids === 'string' ? JSON.parse(p.professor_ids) : p.professor_ids) as string[],
+                id: pref.student_id,
+                preferences: (typeof pref.professor_ids === 'string' ? JSON.parse(pref.professor_ids) : pref.professor_ids) as string[],
                 availableSlots,
             };
         });

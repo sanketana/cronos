@@ -11,6 +11,8 @@ interface Event { id: string; name: string; date?: string; start_time?: string; 
 interface Professor { id: string; name: string; email: string; department: string; available_slots: string[]; }
 interface Student { id: string; name: string; email: string; department: string; available_slots: string[]; }
 
+type SchedulerResult = MatchingResult | { error: string };
+
 export default function SchedulerPage() {
     const [events, setEvents] = useState<Event[]>([]);
     const [selectedEvent, setSelectedEvent] = useState("");
@@ -18,15 +20,9 @@ export default function SchedulerPage() {
     const [students, setStudents] = useState<Student[]>([]);
     const [loadingData, setLoadingData] = useState(true);
     const [scheduling, setScheduling] = useState(false); // NEW: scheduling state
-    const [result, setResult] = useState<MatchingResult | null>(null); // Store full result object
+    const [result, setResult] = useState<SchedulerResult | null>(null); // Store full result object
     const [selectedAlgorithm, setSelectedAlgorithm] = useState('Greedy');
     const [logs, setLogs] = useState<string[]>([]); // For user-friendly logs
-
-    // Algorithm descriptions
-    const algorithmDescriptions: Record<string, string> = {
-        Greedy: 'Fast, simple, good for most cases.',
-        NetworkFlow: 'Optimal matching using advanced graph theory. Guarantees the maximum number of unique student-professor meetings, but may be slower for very large datasets.'
-    };
 
     useEffect(() => {
         async function fetchData() {
@@ -37,8 +33,8 @@ export default function SchedulerPage() {
                 getAllPreferences(),
             ]);
             setEvents(eventsData);
-            (window as unknown as { __availabilities?: any[]; __preferences?: any[] }).__availabilities = availabilities;
-            (window as unknown as { __availabilities?: any[]; __preferences?: any[] }).__preferences = preferences;
+            (window as unknown as { __availabilities?: unknown[] }).__availabilities = availabilities;
+            (window as unknown as { __preferences?: unknown[] }).__preferences = preferences;
             setLoadingData(false);
         }
         fetchData();
@@ -50,31 +46,31 @@ export default function SchedulerPage() {
             setStudents([]);
             return;
         }
-        const availabilities = (window as unknown as { __availabilities?: any[] }).__availabilities || [];
+        const availabilities = (window as unknown as { __availabilities?: unknown[] }).__availabilities || [];
         const eventProfs = availabilities
-            .filter((a: any) => a.event_id === selectedEvent)
-            .map((a: any) => {
-                console.log('Professor available_slots:', a.available_slots);
+            .filter((a) => (a as { event_id: string }).event_id === selectedEvent)
+            .map((a) => {
+                const av = a as { faculty_id: string; faculty_name: string; faculty_email: string; faculty_department?: string; available_slots?: string[] | string };
                 return {
-                    id: a.faculty_id,
-                    name: a.faculty_name,
-                    email: a.faculty_email,
-                    department: a.faculty_department || "-",
-                    available_slots: a.available_slots ? (typeof a.available_slots === 'string' ? JSON.parse(a.available_slots) : a.available_slots) : [],
+                    id: av.faculty_id,
+                    name: av.faculty_name,
+                    email: av.faculty_email,
+                    department: av.faculty_department || "-",
+                    available_slots: av.available_slots ? (typeof av.available_slots === 'string' ? JSON.parse(av.available_slots) : av.available_slots) : [],
                 };
             });
         setProfessors(eventProfs);
-        const preferences = (window as unknown as { __preferences?: any[] }).__preferences || [];
+        const preferences = (window as unknown as { __preferences?: unknown[] }).__preferences || [];
         const eventStudents = preferences
-            .filter((p: any) => p.event_id === selectedEvent)
-            .map((p: any) => {
-                console.log('Student available_slots:', p.available_slots);
+            .filter((p) => (p as { event_id: string }).event_id === selectedEvent)
+            .map((p) => {
+                const pref = p as { student_id: string; student_name: string; student_email: string; student_department?: string; available_slots?: string[] | string };
                 return {
-                    id: p.student_id,
-                    name: p.student_name,
-                    email: p.student_email,
-                    department: p.student_department || "-",
-                    available_slots: p.available_slots ? (typeof p.available_slots === 'string' ? JSON.parse(p.available_slots) : p.available_slots) : [],
+                    id: pref.student_id,
+                    name: pref.student_name,
+                    email: pref.student_email,
+                    department: pref.student_department || "-",
+                    available_slots: pref.available_slots ? (typeof pref.available_slots === 'string' ? JSON.parse(pref.available_slots) : pref.available_slots) : [],
                 };
             });
         setStudents(eventStudents);
@@ -93,11 +89,6 @@ export default function SchedulerPage() {
         } else {
             return `${hour}:${m} ${ampm}`;
         }
-    }
-
-    function formatSlotRange(slot: string) {
-        const [start, end] = slot.split('-');
-        return `${formatSlotTime(start)} - ${formatSlotTime(end)}`;
     }
 
     // Helper to map IDs to names
@@ -169,8 +160,8 @@ export default function SchedulerPage() {
                         try {
                             // Do not show 'Scheduler started...' log to user
                             const res = await runSchedulerAction(selectedEvent, selectedAlgorithm);
-                            if ((res as MatchingResult)?.logs && Array.isArray((res as MatchingResult).logs)) {
-                                setLogs((res as MatchingResult).logs);
+                            if ('logs' in res && Array.isArray((res as any).logs)) {
+                                setLogs((res as any).logs);
                             } else {
                                 setLogs(logs => [...logs, 'Scheduler completed.']);
                             }
@@ -194,7 +185,7 @@ export default function SchedulerPage() {
             {/* Scheduler report in rotated table format (metrics as rows) */}
             {result && (
                 <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded">
-                    {result.error ? (
+                    {'error' in result ? (
                         <div className="text-red-700 font-semibold">{result.error}</div>
                     ) : (
                         <div className="overflow-x-auto">
@@ -204,8 +195,8 @@ export default function SchedulerPage() {
                                         <td className="py-1 pr-4 pl-2 font-semibold text-gray-700 text-left align-top" style={{ borderBottom: '1px solid #eee', minWidth: '180px' }}>
                                             Status
                                         </td>
-                                        <td className={`py-1 pl-2 text-left align-top ${result.error ? "text-red-700 font-semibold" : "text-green-700 font-semibold"}`} style={{ borderBottom: '1px solid #eee' }}>
-                                            {result.error ? 'Error' : 'Success'}
+                                        <td className={`py-1 pl-2 text-left align-top text-green-700 font-semibold`} style={{ borderBottom: '1px solid #eee' }}>
+                                            Success
                                         </td>
                                     </tr>
                                     <tr>
@@ -213,7 +204,7 @@ export default function SchedulerPage() {
                                             Total Meetings Scheduled
                                         </td>
                                         <td className="py-1 pl-2 text-green-900 text-left align-top" style={{ borderBottom: '1px solid #eee' }}>
-                                            {result.meetings.length}
+                                            {'meetings' in result ? result.meetings.length : '-'}
                                         </td>
                                     </tr>
                                     <tr>
@@ -221,7 +212,7 @@ export default function SchedulerPage() {
                                             Time Taken (seconds)
                                         </td>
                                         <td className="py-1 pl-2 text-blue-900 text-left align-top" style={{ borderBottom: '1px solid #eee' }}>
-                                            {typeof result.timeTakenSeconds === 'number' ? result.timeTakenSeconds.toFixed(2) : '-'}
+                                            {'timeTakenSeconds' in result && typeof result.timeTakenSeconds === 'number' ? result.timeTakenSeconds.toFixed(2) : '-'}
                                         </td>
                                     </tr>
                                     <tr>
@@ -229,7 +220,7 @@ export default function SchedulerPage() {
                                             Unmatched Students
                                         </td>
                                         <td className="py-1 pl-2 text-yellow-900 text-left align-top" style={{ borderBottom: '1px solid #eee' }}>
-                                            {result.unmatchedStudents?.length > 0 ? result.unmatchedStudents.map(getStudentName).join(', ') : 'None'}
+                                            {'unmatchedStudents' in result && result.unmatchedStudents?.length > 0 ? result.unmatchedStudents.map(getStudentName).join(', ') : 'None'}
                                         </td>
                                     </tr>
                                     <tr>
@@ -237,7 +228,7 @@ export default function SchedulerPage() {
                                             Unmatched Professors
                                         </td>
                                         <td className="py-1 pl-2 text-yellow-900 text-left align-top">
-                                            {result.unmatchedProfessors?.length > 0 ? result.unmatchedProfessors.map(getProfessorName).join(', ') : 'None'}
+                                            {'unmatchedProfessors' in result && result.unmatchedProfessors?.length > 0 ? result.unmatchedProfessors.map(getProfessorName).join(', ') : 'None'}
                                         </td>
                                     </tr>
                                 </tbody>
