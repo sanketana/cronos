@@ -39,23 +39,31 @@ export async function prepareMatchingInput(eventId: string): Promise<MatchingInp
     // Professors
     const professors = availabilities
         .filter((a: any) => a.event_id === eventId)
-        .map((a: any) => ({
-            id: a.faculty_id,
-            availableSlots: slots.filter(slot =>
-                !(a.unavailable_slots && ((typeof a.unavailable_slots === 'string' ? JSON.parse(a.unavailable_slots) : a.unavailable_slots) as string[]).includes(slot))
-            ),
-        }));
+        .map((a: any) => {
+            let availableSlots: string[] = [];
+            if (a.available_slots) {
+                availableSlots = typeof a.available_slots === 'string' ? JSON.parse(a.available_slots) : a.available_slots;
+            }
+            return {
+                id: a.faculty_id,
+                availableSlots,
+            };
+        });
 
     // Students
     const students = preferences
         .filter((p: any) => p.event_id === eventId)
-        .map((p: any) => ({
-            id: p.student_id,
-            preferences: (typeof p.professor_ids === 'string' ? JSON.parse(p.professor_ids) : p.professor_ids) as string[],
-            availableSlots: slots.filter(slot =>
-                !(p.unavailable_slots && ((typeof p.unavailable_slots === 'string' ? JSON.parse(p.unavailable_slots) : p.unavailable_slots) as string[]).includes(slot))
-            ),
-        }));
+        .map((p: any) => {
+            let availableSlots: string[] = [];
+            if (p.available_slots) {
+                availableSlots = typeof p.available_slots === 'string' ? JSON.parse(p.available_slots) : p.available_slots;
+            }
+            return {
+                id: p.student_id,
+                preferences: (typeof p.professor_ids === 'string' ? JSON.parse(p.professor_ids) : p.professor_ids) as string[],
+                availableSlots,
+            };
+        });
 
     return {
         eventId,

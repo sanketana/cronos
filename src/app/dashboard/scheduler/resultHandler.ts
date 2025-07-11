@@ -28,7 +28,6 @@ export async function saveMeetings(meetings: ScheduledMeeting[], runId: number) 
             : eventDate instanceof Date
                 ? eventDate.toISOString().slice(0, 10)
                 : '';
-        console.log('eventDate:', eventDateStr, 'slot:', m.slot);
         const { starts_at, ends_at } = parseSlotToTimestamps(eventDateStr, m.slot);
         if (isNaN(starts_at.getTime()) || isNaN(ends_at.getTime())) {
             throw new Error(`Invalid slot or event date: eventDate=${eventDateStr}, slot=${m.slot}`);

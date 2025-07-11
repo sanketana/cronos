@@ -52,7 +52,7 @@ export default function MeetingsTabsClient({ meetings, professors, students, eve
         if (!startStr || !endStr) return '';
         const start = new Date(startStr);
         const end = new Date(endStr);
-        const formatTime = (d: Date) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        const formatTime = (d: Date) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' });
         return `${formatTime(start)} - ${formatTime(end)}`;
     }
 
