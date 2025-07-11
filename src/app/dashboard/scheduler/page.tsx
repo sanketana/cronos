@@ -12,8 +12,16 @@ export default function SchedulerPage() {
     const [professors, setProfessors] = useState<any[]>([]);
     const [students, setStudents] = useState<any[]>([]);
     const [loadingData, setLoadingData] = useState(true);
-    const [result, setResult] = useState<string | null>(null);
+    const [scheduling, setScheduling] = useState(false); // NEW: scheduling state
+    const [result, setResult] = useState<any | null>(null); // Store full result object
     const [selectedAlgorithm, setSelectedAlgorithm] = useState('Greedy');
+    const [logs, setLogs] = useState<string[]>([]); // For user-friendly logs
+
+    // Algorithm descriptions
+    const algorithmDescriptions: Record<string, string> = {
+        Greedy: 'Fast, simple, good for most cases.',
+        NetworkFlow: 'Optimal matching using advanced graph theory. Guarantees the maximum number of unique student-professor meetings, but may be slower for very large datasets.'
+    };
 
     useEffect(() => {
         async function fetchData() {
@@ -100,6 +108,17 @@ export default function SchedulerPage() {
     return (
         <div className="max-w-6xl mx-auto p-6">
             <h1 className="text-2xl font-bold mb-6">Scheduler</h1>
+            {/* Spinner overlay when scheduling */}
+            {scheduling && (
+                <div className="fixed inset-0 bg-white bg-opacity-80 z-50 flex flex-col items-center justify-center">
+                    <div className="w-20 h-20 border-8 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-6"></div>
+                    <div className="w-full max-w-lg bg-white bg-opacity-90 rounded shadow p-4 mt-2">
+                        <ul className="text-sm text-gray-700 max-h-40 overflow-y-auto">
+                            {logs.length === 0 ? null : logs.map((log, i) => <li key={i}>{log}</li>)}
+                        </ul>
+                    </div>
+                </div>
+            )}
             <div className="flex flex-col md:flex-row md:items-end gap-4 mb-6">
                 <div className="flex-1">
                     <label className="block mb-2 font-medium">Select Event</label>
@@ -131,53 +150,99 @@ export default function SchedulerPage() {
                         value={selectedAlgorithm}
                         onChange={e => setSelectedAlgorithm(e.target.value)}
                     >
-                        <option value="Greedy">Greedy</option>
-                        <option value="NetworkFlow">Network Flow</option>
+                        <option value="Greedy">🏃‍♂️ Greedy Algorithm (fast, simple, good for most cases)</option>
+                        <option value="NetworkFlow">🧠 Network Flow Algorithm (optimal, best matching, slower for large data)</option>
                     </select>
                 </div>
                 <button
-                    className="primary-btn px-6 py-2 rounded disabled:opacity-50 mt-4 md:mt-0"
-                    disabled={!selectedEvent || loadingData}
+                    className="primary-btn px-6 py-2 rounded disabled:opacity-50 mt-4 md:mt-0 flex items-center gap-2"
+                    disabled={!selectedEvent || loadingData || scheduling}
                     onClick={async () => {
                         setResult(null);
+                        setLogs([]);
+                        setScheduling(true);
                         try {
+                            // Do not show 'Scheduler started...' log to user
                             const res = await runSchedulerAction(selectedEvent, selectedAlgorithm);
-                            const unmatchedStudentNames = res.unmatchedStudents.map(getStudentName).join(', ');
-                            const unmatchedProfessorNames = res.unmatchedProfessors.map(getProfessorName).join(', ');
-                            setResult(
-                                `Scheduled ${res.meetings.length} meeting(s). ` +
-                                (res.unmatchedStudents.length ? `Unmatched students: ${unmatchedStudentNames}. ` : '') +
-                                (res.unmatchedProfessors.length ? `Unmatched professors: ${unmatchedProfessorNames}.` : '')
-                            );
+                            if ((res as any)?.logs && Array.isArray((res as any).logs)) {
+                                setLogs((res as any).logs);
+                            } else {
+                                setLogs(logs => [...logs, 'Scheduler completed.']);
+                            }
+                            setResult(res);
                         } catch (err) {
-                            setResult('Error running scheduler.');
+                            setLogs(logs => [...logs, 'Error running scheduler.']);
+                            setResult({ error: 'Error running scheduler.' });
+                        } finally {
+                            setScheduling(false);
                         }
                     }}
                     title={selectedEvent ? 'Run the scheduler for the selected event' : 'Select an event to enable'}
-                    style={{ cursor: !selectedEvent || loadingData ? 'not-allowed' : 'pointer', opacity: !selectedEvent || loadingData ? 0.6 : 1 }}
+                    style={{ cursor: !selectedEvent || loadingData || scheduling ? 'not-allowed' : 'pointer', opacity: !selectedEvent || loadingData || scheduling ? 0.6 : 1 }}
                 >
-                    Run Scheduler
+                    {scheduling && (
+                        <span className="animate-spin mr-1" role="img" aria-label="Loading">⏳</span>
+                    )}
+                    {scheduling ? 'Scheduling...' : 'Run Scheduler'}
                 </button>
             </div>
+            {/* Scheduler report in rotated table format (metrics as rows) */}
             {result && (
-                <div className="mt-4 p-4 bg-green-100 text-green-800 rounded">
-                    {result}
+                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded">
+                    {result.error ? (
+                        <div className="text-red-700 font-semibold">{result.error}</div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="min-w-[350px] text-sm" style={{ borderCollapse: 'collapse' }}>
+                                <tbody>
+                                    <tr>
+                                        <td className="py-1 pr-4 pl-2 font-semibold text-gray-700 text-left align-top" style={{ borderBottom: '1px solid #eee', minWidth: '180px' }}>
+                                            Status
+                                        </td>
+                                        <td className={`py-1 pl-2 text-left align-top ${result.error ? "text-red-700 font-semibold" : "text-green-700 font-semibold"}`} style={{ borderBottom: '1px solid #eee' }}>
+                                            {result.error ? 'Error' : 'Success'}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-1 pr-4 pl-2 font-semibold text-gray-700 text-left align-top" style={{ borderBottom: '1px solid #eee' }}>
+                                            Total Meetings Scheduled
+                                        </td>
+                                        <td className="py-1 pl-2 text-green-900 text-left align-top" style={{ borderBottom: '1px solid #eee' }}>
+                                            {result.meetings.length}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-1 pr-4 pl-2 font-semibold text-gray-700 text-left align-top" style={{ borderBottom: '1px solid #eee' }}>
+                                            Time Taken (seconds)
+                                        </td>
+                                        <td className="py-1 pl-2 text-blue-900 text-left align-top" style={{ borderBottom: '1px solid #eee' }}>
+                                            {typeof result.timeTakenSeconds === 'number' ? result.timeTakenSeconds.toFixed(2) : '-'}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-1 pr-4 pl-2 font-semibold text-gray-700 text-left align-top" style={{ borderBottom: '1px solid #eee' }}>
+                                            Unmatched Students
+                                        </td>
+                                        <td className="py-1 pl-2 text-yellow-900 text-left align-top" style={{ borderBottom: '1px solid #eee' }}>
+                                            {result.unmatchedStudents?.length > 0 ? result.unmatchedStudents.map(getStudentName).join(', ') : 'None'}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-1 pr-4 pl-2 font-semibold text-gray-700 text-left align-top">
+                                            Unmatched Professors
+                                        </td>
+                                        <td className="py-1 pl-2 text-yellow-900 text-left align-top">
+                                            {result.unmatchedProfessors?.length > 0 ? result.unmatchedProfessors.map(getProfessorName).join(', ') : 'None'}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
             )}
             {selectedEvent && (
                 <>
-                    {(() => {
-                        const event = events.find(e => e.id === selectedEvent);
-                        if (!event) return null;
-                        return (
-                            <div className="flex justify-center">
-                                <div className="text-lg font-semibold text-gray-900 mb-8">
-                                    Event Time: {formatSlotTime(event.start_time)} - {formatSlotTime(event.end_time)}
-                                </div>
-                            </div>
-                        );
-                    })()}
-
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                         <div>
                             <h2 className="text-lg font-semibold mb-2">Professors</h2>

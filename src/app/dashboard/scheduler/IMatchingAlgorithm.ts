@@ -25,6 +25,7 @@ export interface MatchingResult {
     meetings: ScheduledMeeting[];
     unmatchedStudents: string[]; // student ids
     unmatchedProfessors: string[]; // professor ids
+    timeTakenSeconds?: number;
 }
 
 export interface IMatchingAlgorithm {

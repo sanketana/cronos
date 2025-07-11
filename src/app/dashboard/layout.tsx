@@ -11,8 +11,6 @@ const allSidebarItems = [
     { label: 'Scheduler', href: '/dashboard/scheduler', roles: ['admin'] },
     { label: 'Meetings', href: '/dashboard/meetings', roles: ['admin'] },
     { label: 'Housekeeping', href: '/dashboard/housekeeping', roles: ['admin'] },
-    { label: 'Forms & Links', href: '/dashboard/forms', roles: ['admin'] },
-    { label: 'Settings', href: '/dashboard/settings', roles: ['admin'] },
     // Self-serve links for faculty and students
     { label: 'My Availability', href: '/dashboard/faculty', roles: ['faculty'] },
     { label: 'My Preferences', href: '/dashboard/students', roles: ['student'] },

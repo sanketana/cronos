@@ -11,6 +11,7 @@ interface Edge {
 
 export class NetworkFlowScheduler implements IMatchingAlgorithm {
     async computeMatches(input: MatchingInput): Promise<MatchingResult> {
+        console.log('[NetworkFlowScheduler] Starting network flow matching algorithm');
         // Build a layered graph with (student, professor) pair nodes to enforce only one meeting per pair
         // Nodes: source, students, (student,professor) pairs, (student,professor,slot) triplets, professors, sink
         const source = 0;
@@ -77,9 +78,11 @@ export class NetworkFlowScheduler implements IMatchingAlgorithm {
         for (const p of input.professors) {
             this.addEdge(graph, professorNodes[p.id], sink, input.students.length); // as many as students
         }
+        console.log(`[NetworkFlowScheduler] Graph constructed with ${N} nodes, ${triplets.length} triplets`);
         // Edmonds-Karp
         let flow = 0;
         const parent: { v: number; e: number }[] = Array(N);
+        let iter = 0;
         while (this.bfs(graph, source, sink, parent)) {
             // Find min capacity along the path
             let pathCap = Infinity;
@@ -99,6 +102,8 @@ export class NetworkFlowScheduler implements IMatchingAlgorithm {
                 v = u;
             }
             flow += pathCap;
+            iter++;
+            console.log(`[NetworkFlowScheduler] Flow iteration ${iter}, path capacity: ${pathCap}, total flow: ${flow}`);
         }
         // Extract matches
         const meetings: ScheduledMeeting[] = [];
@@ -114,12 +119,14 @@ export class NetworkFlowScheduler implements IMatchingAlgorithm {
                     studentId: t.studentId,
                     slot: t.slot,
                 });
+                console.log(`[NetworkFlowScheduler] Scheduled meeting: student ${t.studentId} with professor ${t.professorId} at slot ${t.slot}`);
             }
         }
         const matchedStudentIds = new Set(meetings.map(m => m.studentId));
         const matchedProfessorIds = new Set(meetings.map(m => m.professorId));
         const unmatchedStudents = input.students.map(s => s.id).filter(id => !matchedStudentIds.has(id));
         const unmatchedProfessors = input.professors.map(p => p.id).filter(id => !matchedProfessorIds.has(id));
+        console.log(`[NetworkFlowScheduler] Finished. Scheduled ${meetings.length} meetings. Unmatched students: ${unmatchedStudents.join(', ')}. Unmatched professors: ${unmatchedProfessors.join(', ')}`);
         return { meetings, unmatchedStudents, unmatchedProfessors };
     }
 
