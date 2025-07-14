@@ -77,5 +77,5 @@ export default async function StudentsDashboard() {
     if (!user) redirect('/login');
     const { students, preferences, faculty } = await getStudentData(user);
     const meetings = await getStudentMeetings(user);
-    return <StudentsTabsClient students={students} preferences={preferences} faculty={faculty} meetings={meetings} />;
+    return <StudentsTabsClient students={students} preferences={preferences} faculty={faculty} />;
 } 
