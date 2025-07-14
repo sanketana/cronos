@@ -2,6 +2,8 @@ import MeetingsTabsClient from './MeetingsTabsClient';
 import { Client } from 'pg';
 import { cookies } from 'next/headers';
 
+type User = { userId?: string; id?: string; role?: string | null };
+
 async function getSessionUser() {
     const cookieStore = await cookies();
     const session = cookieStore.get('chronos_session');
@@ -13,7 +15,7 @@ async function getSessionUser() {
     }
 }
 
-async function getMeetings(user: any, latestRunId: number | null) {
+async function getMeetings(user: User, latestRunId: number | null) {
     const client = new Client({
         connectionString: process.env.NEON_POSTGRES_URL,
         ssl: { rejectUnauthorized: false }
