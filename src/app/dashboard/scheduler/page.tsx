@@ -86,6 +86,33 @@ export default function SchedulerPage() {
         return p ? p.name : id;
     }
 
+    function replaceIdsWithNames(log: string): string {
+        let replaced = log;
+        // Replace 'student <uuid>' and 'professor <uuid>' patterns
+        students.forEach(s => {
+            if (s.id && s.name) {
+                // Replace 'student <uuid>'
+                const regex1 = new RegExp(`student ${s.id}(?![\w-])`, 'g');
+                replaced = replaced.replace(regex1, `student ${s.name}`);
+                // Replace just the UUID
+                const regex2 = new RegExp(`\b${s.id}\b`, 'g');
+                replaced = replaced.replace(regex2, s.name);
+            }
+        });
+        professors.forEach(p => {
+            if (p.id && p.name) {
+                // Replace 'professor <uuid>'
+                const regex1 = new RegExp(`professor ${p.id}(?![\w-])`, 'g');
+                replaced = replaced.replace(regex1, `professor ${p.name}`);
+                // Replace just the UUID
+                const regex2 = new RegExp(`\b${p.id}\b`, 'g');
+                replaced = replaced.replace(regex2, p.name);
+            }
+        });
+        // Optionally, handle event UUIDs if you have event names and IDs available
+        return replaced;
+    }
+
     return (
         <div className="max-w-6xl mx-auto p-6">
             <h1 className="text-2xl font-bold mb-6">Scheduler</h1>
@@ -95,7 +122,7 @@ export default function SchedulerPage() {
                     <div className="w-20 h-20 border-8 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-6"></div>
                     <div className="w-full max-w-lg bg-white bg-opacity-90 rounded shadow p-4 mt-2">
                         <ul className="text-sm text-gray-700 max-h-40 overflow-y-auto">
-                            {logs.length === 0 ? null : logs.map((log, i) => <li key={i}>{log}</li>)}
+                            {logs.length === 0 ? null : logs.map((log, i) => <li key={i}>{replaceIdsWithNames(log)}</li>)}
                         </ul>
                     </div>
                 </div>

@@ -70,7 +70,7 @@ export async function updateEvent(formData: FormData) {
 export async function getAllEvents() {
   const client = new Client({ connectionString: process.env.NEON_POSTGRES_URL });
   await client.connect();
-  const result = await client.query('SELECT id, name, date, slot_len, status, start_time, end_time, available_slots FROM events ORDER BY date DESC');
+  const result = await client.query('SELECT id, name, date::text as date, slot_len, status, start_time, end_time, available_slots FROM events ORDER BY date DESC');
   await client.end();
   return result.rows;
 } 

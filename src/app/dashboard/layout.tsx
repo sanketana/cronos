@@ -9,11 +9,13 @@ const allSidebarItems = [
     { label: 'Faculty', href: '/dashboard/faculty', roles: ['admin'] },
     { label: 'Students', href: '/dashboard/students', roles: ['admin'] },
     { label: 'Scheduler', href: '/dashboard/scheduler', roles: ['admin'] },
-    { label: 'Meetings', href: '/dashboard/meetings', roles: ['admin'] },
-    { label: 'Housekeeping', href: '/dashboard/housekeeping', roles: ['admin'] },
     // Self-serve links for faculty and students
     { label: 'My Availability', href: '/dashboard/faculty', roles: ['faculty'] },
+    { label: 'Meetings', href: '/dashboard/meetings', roles: ['faculty'] },
     { label: 'My Preferences', href: '/dashboard/students', roles: ['student'] },
+    { label: 'Meetings', href: '/dashboard/meetings', roles: ['student'] },
+    { label: 'Meetings', href: '/dashboard/meetings', roles: ['admin'] },
+    { label: 'Housekeeping', href: '/dashboard/housekeeping', roles: ['admin'] },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

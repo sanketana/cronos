@@ -23,19 +23,22 @@ export default function StudentsTableClient({ students }: { students: Student[] 
     const [, startTransition] = useTransition();
     const router = useRouter();
     const [role, setRole] = useState<string | null>(null);
+    const [userId, setUserId] = useState<string | null>(null);
 
     useEffect(() => {
-        async function fetchRole() {
+        async function fetchRoleAndId() {
             try {
                 const res = await fetch('/api/auth/me');
                 if (!res.ok) throw new Error('Not authenticated');
                 const data = await res.json();
                 setRole(data.role);
+                setUserId(data.userId || data.id || null);
             } catch {
                 setRole(null);
+                setUserId(null);
             }
         }
-        fetchRole();
+        fetchRoleAndId();
     }, []);
 
     function handleAddClick() {
@@ -116,13 +119,15 @@ export default function StudentsTableClient({ students }: { students: Student[] 
                                     <td>{s.department || '-'}</td>
                                     <td>{s.status}</td>
                                     <td>
-                                        {role === 'admin' && (
+                                        {role === 'admin' ? (
                                             <>
                                                 <button className="secondary-btn" style={{ marginRight: '0.5rem' }} onClick={() => handleEditClick(s)}>Edit</button>
-                                                <button className="secondary-btn" style={{ marginRight: '0.5rem' }} onClick={() => handlePreferenceClick(s)}>Preference</button>
+                                                <button className="secondary-btn" style={{ marginRight: '0.5rem' }} onClick={() => handlePreferenceClick(s)}>Update Preferences</button>
                                                 <button className="danger-btn" onClick={() => handleDelete(s.id)}>Delete</button>
                                             </>
-                                        )}
+                                        ) : (role === 'student' && userId === s.id) ? (
+                                            <button className="secondary-btn" onClick={() => handlePreferenceClick(s)}>Update Preferences</button>
+                                        ) : null}
                                     </td>
                                 </tr>
                             );

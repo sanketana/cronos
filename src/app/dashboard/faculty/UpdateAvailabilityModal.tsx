@@ -174,7 +174,7 @@ export default function UpdateAvailabilityModal({ isOpen, onClose, faculty, onSu
                                 const event = ev as { id: string; name: string; date?: string };
                                 return (
                                     <option key={event.id} value={event.id}>
-                                        {event.name} ({event.date ? event.date.slice(0, 10) : ""})
+                                        {event.name} ({event.date ? (typeof event.date === 'string' ? event.date.slice(0, 10) : new Date(event.date).toISOString().slice(0, 10)) : ""})
                                     </option>
                                 );
                             })}

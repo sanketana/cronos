@@ -23,19 +23,22 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
     const [isAvailabilityModalOpen, setAvailabilityModalOpen] = useState(false);
     const [availabilityFaculty, setAvailabilityFaculty] = useState<Faculty | null>(null);
     const [role, setRole] = useState<string | null>(null);
+    const [userId, setUserId] = useState<string | null>(null);
 
     useEffect(() => {
-        async function fetchRole() {
+        async function fetchRoleAndId() {
             try {
                 const res = await fetch('/api/auth/me');
                 if (!res.ok) throw new Error('Not authenticated');
                 const data = await res.json();
                 setRole(data.role);
+                setUserId(data.userId || data.id || null);
             } catch {
                 setRole(null);
+                setUserId(null);
             }
         }
-        fetchRole();
+        fetchRoleAndId();
     }, []);
 
     function handleAddClick() {
@@ -123,15 +126,19 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
                                     <td>{f.status}</td>
                                     <td>
                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                            {role === 'admin' && (
+                                            {role === 'admin' ? (
                                                 <>
                                                     <button className="secondary-btn" onClick={() => handleEditClick(f)}>Edit</button>
                                                     <button className="secondary-btn" onClick={() => handleUpdateAvailabilityClick(f)}>
-                                                        Availability
+                                                        Update Availability
                                                     </button>
                                                     <button className="danger-btn" onClick={() => handleDelete(f.id)}>Delete</button>
                                                 </>
-                                            )}
+                                            ) : (role === 'faculty' && userId === f.id) ? (
+                                                <button className="secondary-btn" onClick={() => handleUpdateAvailabilityClick(f)}>
+                                                    Update Availability
+                                                </button>
+                                            ) : null}
                                         </div>
                                     </td>
                                 </tr>

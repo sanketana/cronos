@@ -29,34 +29,43 @@ export default function PreferencesTableClient({ preferences, faculty }: { prefe
         return map;
     }, [faculty]);
 
-    // Filter state
-    const [studentFilter, setStudentFilter] = React.useState("");
-    const [professorFilter, setProfessorFilter] = React.useState("");
-    const [eventFilter, setEventFilter] = React.useState("");
+    // Dropdown filter state
+    const [studentFilter, setStudentFilter] = React.useState('');
+    const [professorFilter, setProfessorFilter] = React.useState('');
+    const [eventFilter, setEventFilter] = React.useState('');
 
-    // Unique event names for dropdown
-    const eventNames = React.useMemo(() => {
+    // Unique values for dropdowns
+    const uniqueStudents = React.useMemo(() => {
+        const set = new Set<string>();
+        preferences.forEach(p => set.add(p.student_name));
+        return Array.from(set);
+    }, [preferences]);
+    const uniqueEvents = React.useMemo(() => {
         const set = new Set<string>();
         preferences.forEach(p => set.add(p.event_name));
         return Array.from(set);
     }, [preferences]);
+    const uniqueProfessors = React.useMemo(() => {
+        const set = new Set<string>();
+        preferences.forEach(p => {
+            if (Array.isArray(p.professor_ids)) {
+                p.professor_ids.forEach(id => set.add(facultyMap[id] || id));
+            }
+        });
+        return Array.from(set);
+    }, [preferences, facultyMap]);
 
     // Filtered preferences
     const filtered = React.useMemo(() => {
         return preferences.filter(p => {
-            // Student filter (name or email)
-            const studentMatch = studentFilter.trim() === "" ||
-                p.student_name.toLowerCase().includes(studentFilter.toLowerCase()) ||
-                p.student_email.toLowerCase().includes(studentFilter.toLowerCase());
-            // Event filter
-            const eventMatch = eventFilter.trim() === "" || p.event_name === eventFilter;
-            // Professor filter (pattern search)
+            const studentMatch = !studentFilter || p.student_name === studentFilter;
+            const eventMatch = !eventFilter || p.event_name === eventFilter;
             let professorMatch = true;
-            if (professorFilter.trim() !== "") {
+            if (professorFilter) {
                 const profNames = Array.isArray(p.professor_ids)
                     ? p.professor_ids.map(id => facultyMap[id] || id)
                     : [];
-                professorMatch = profNames.some(name => name.toLowerCase().includes(professorFilter.toLowerCase()));
+                professorMatch = profNames.includes(professorFilter);
             }
             return studentMatch && eventMatch && professorMatch;
         });
@@ -64,49 +73,41 @@ export default function PreferencesTableClient({ preferences, faculty }: { prefe
 
     return (
         <div>
-            <div className="w-full flex flex-wrap md:flex-nowrap gap-4 items-end bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-4 border border-gray-200 dark:border-gray-700">
-                <input
-                    className="form-input"
-                    style={{ minWidth: 180 }}
-                    placeholder="Filter by student name or email"
-                    value={studentFilter}
-                    onChange={e => setStudentFilter(e.target.value)}
-                />
-                <input
-                    className="form-input"
-                    style={{ minWidth: 180 }}
-                    placeholder="Filter by professor name"
-                    value={professorFilter}
-                    onChange={e => setProfessorFilter(e.target.value)}
-                />
-                <select
-                    className="form-input"
-                    style={{ minWidth: 180 }}
-                    value={eventFilter}
-                    onChange={e => setEventFilter(e.target.value)}
-                >
-                    <option value="">All Events</option>
-                    {eventNames.map(ev => (
-                        <option key={ev} value={ev}>{ev}</option>
-                    ))}
-                </select>
-            </div>
             <table className="events-table">
                 <thead>
                     <tr>
-                        <th>Student</th>
+                        <th>
+                            <select className="filter-select" value={studentFilter} onChange={e => setStudentFilter(e.target.value)}>
+                                <option value="">Student</option>
+                                {uniqueStudents.map(name => (
+                                    <option key={name} value={name}>{name}</option>
+                                ))}
+                            </select>
+                        </th>
                         <th>Email</th>
-                        <th>Event</th>
+                        <th>
+                            <select className="filter-select" value={eventFilter} onChange={e => setEventFilter(e.target.value)}>
+                                <option value="">Event</option>
+                                {uniqueEvents.map(ev => (
+                                    <option key={ev} value={ev}>{ev}</option>
+                                ))}
+                            </select>
+                        </th>
                         <th>Event Date</th>
-                        <th>Professor Preference</th>
+                        <th>
+                            <select className="filter-select" value={professorFilter} onChange={e => setProfessorFilter(e.target.value)}>
+                                <option value="">Professor Preference</option>
+                                {uniqueProfessors.map(name => (
+                                    <option key={name} value={name}>{name}</option>
+                                ))}
+                            </select>
+                        </th>
                         <th>Available Slots</th>
-                        <th>Notes</th>
-                        <th>Last Updated</th>
                     </tr>
                 </thead>
                 <tbody>
                     {filtered.length === 0 ? (
-                        <tr><td colSpan={8}>No preferences found.</td></tr>
+                        <tr><td colSpan={6}>No preferences found.</td></tr>
                     ) : (
                         filtered.map(p => (
                             <tr key={p.id}>
@@ -123,8 +124,6 @@ export default function PreferencesTableClient({ preferences, faculty }: { prefe
                                     : p.professor_ids}
                                 </td>
                                 <td>{Array.isArray(p.available_slots) ? p.available_slots.join(", ") : (p.available_slots || "-")}</td>
-                                <td>{p.preferences || '-'}</td>
-                                <td>{typeof p.updated_at === 'string' ? p.updated_at.slice(0, 16).replace('T', ' ') : new Date(p.updated_at).toLocaleString()}</td>
                             </tr>
                         ))
                     )}

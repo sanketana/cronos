@@ -1,22 +1,76 @@
 import MeetingsTabsClient from './MeetingsTabsClient';
 import { Client } from 'pg';
+import { cookies } from 'next/headers';
 
-async function getMeetings() {
+async function getSessionUser() {
+    const cookieStore = await cookies();
+    const session = cookieStore.get('chronos_session');
+    if (!session) return null;
+    try {
+        return JSON.parse(session.value);
+    } catch {
+        return null;
+    }
+}
+
+async function getMeetings(user: any, latestRunId: number | null) {
     const client = new Client({
         connectionString: process.env.NEON_POSTGRES_URL,
         ssl: { rejectUnauthorized: false }
     });
     await client.connect();
-    const result = await client.query(`
-        SELECT m.*, e.name as event_name, u1.name as faculty_name, u2.name as student_name
-        FROM meetings m
-        JOIN events e ON m.event_id = e.id
-        JOIN users u1 ON m.faculty_id = u1.id
-        JOIN users u2 ON m.student_id = u2.id
-        ORDER BY m.start_time, m.event_id
-    `);
+    let result;
+    if (user && user.role === 'student' && latestRunId) {
+        result = await client.query(`
+            SELECT m.*, e.name as event_name, u1.name as faculty_name, u2.name as student_name
+            FROM meetings m
+            JOIN events e ON m.event_id = e.id
+            JOIN users u1 ON m.faculty_id = u1.id
+            JOIN users u2 ON m.student_id = u2.id
+            WHERE m.student_id = $1 AND m.run_id = $2
+            ORDER BY m.start_time, m.event_id
+        `, [user.userId || user.id, latestRunId]);
+    } else if (user && user.role === 'student') {
+        result = await client.query(`
+            SELECT m.*, e.name as event_name, u1.name as faculty_name, u2.name as student_name
+            FROM meetings m
+            JOIN events e ON m.event_id = e.id
+            JOIN users u1 ON m.faculty_id = u1.id
+            JOIN users u2 ON m.student_id = u2.id
+            WHERE m.student_id = $1
+            ORDER BY m.start_time, m.event_id
+        `, [user.userId || user.id]);
+    } else if (user && user.role === 'faculty' && latestRunId) {
+        result = await client.query(`
+            SELECT m.*, e.name as event_name, u1.name as faculty_name, u2.name as student_name
+            FROM meetings m
+            JOIN events e ON m.event_id = e.id
+            JOIN users u1 ON m.faculty_id = u1.id
+            JOIN users u2 ON m.student_id = u2.id
+            WHERE m.faculty_id = $1 AND m.run_id = $2
+            ORDER BY m.start_time, m.event_id
+        `, [user.userId || user.id, latestRunId]);
+    } else if (user && user.role === 'faculty') {
+        result = await client.query(`
+            SELECT m.*, e.name as event_name, u1.name as faculty_name, u2.name as student_name
+            FROM meetings m
+            JOIN events e ON m.event_id = e.id
+            JOIN users u1 ON m.faculty_id = u1.id
+            JOIN users u2 ON m.student_id = u2.id
+            WHERE m.faculty_id = $1
+            ORDER BY m.start_time, m.event_id
+        `, [user.userId || user.id]);
+    } else {
+        result = await client.query(`
+            SELECT m.*, e.name as event_name, u1.name as faculty_name, u2.name as student_name
+            FROM meetings m
+            JOIN events e ON m.event_id = e.id
+            JOIN users u1 ON m.faculty_id = u1.id
+            JOIN users u2 ON m.student_id = u2.id
+            ORDER BY m.start_time, m.event_id
+        `);
+    }
     await client.end();
-    // Map professor_id to faculty_id in returned objects for compatibility
     return result.rows.map(row => ({
         ...row,
         professor_id: row.faculty_id, // for compatibility with frontend
@@ -69,12 +123,14 @@ async function getRuns() {
 }
 
 export default async function MeetingsPage() {
-    const [meetings, professors, students, events, runs] = await Promise.all([
-        getMeetings(),
+    const user = await getSessionUser();
+    const runs = await getRuns();
+    const latestRunId = runs.length > 0 ? runs[0].id : null;
+    const [meetings, professors, students, events] = await Promise.all([
+        getMeetings(user, latestRunId),
         getProfessors(),
         getStudents(),
-        getEvents(),
-        getRuns()
+        getEvents()
     ]);
     return <MeetingsTabsClient meetings={meetings} professors={professors} students={students} events={events} runs={runs} />;
 } 
