@@ -51,27 +51,6 @@ async function getStudentData(user: unknown) {
     return { students, preferences, faculty };
 }
 
-async function getStudentMeetings(user: unknown) {
-    if (!user || typeof user !== 'object' || !(user as { userId?: string }).userId) return [];
-    const client = new Client({ connectionString: process.env.NEON_POSTGRES_URL });
-    await client.connect();
-    const result = await client.query(`
-        SELECT m.*, e.name as event_name, u1.name as faculty_name, u2.name as student_name
-        FROM meetings m
-        JOIN events e ON m.event_id = e.id
-        JOIN users u1 ON m.faculty_id = u1.id
-        JOIN users u2 ON m.student_id = u2.id
-        WHERE m.student_id = $1
-        ORDER BY m.start_time, m.event_id
-    `, [(user as { userId: string }).userId]);
-    await client.end();
-    return result.rows.map(row => ({
-        ...row,
-        professor_id: row.faculty_id, // for compatibility
-        professor_name: row.faculty_name,
-    }));
-}
-
 export default async function StudentsDashboard() {
     const user = await getSessionUser();
     if (!user) redirect('/login');
