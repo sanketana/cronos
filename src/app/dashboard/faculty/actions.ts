@@ -130,4 +130,66 @@ export async function getAvailability(facultyId: string, eventId: string) {
     );
     await client.end();
     return result.rows[0] || null;
+}
+
+export async function bulkUploadFaculty(records: { name: string; email: string; department: string }[]) {
+    if (!records || records.length === 0) {
+        throw new Error('No records provided for bulk upload');
+    }
+
+    const client = new Client({
+        connectionString: process.env.NEON_POSTGRES_URL,
+        ssl: { rejectUnauthorized: false }
+    });
+    
+    await client.connect();
+    
+    let successCount = 0;
+    let failedCount = 0;
+    const errors: string[] = [];
+
+    try {
+        await client.query('BEGIN');
+
+        for (const record of records) {
+            try {
+                // Check if faculty with this email already exists
+                const existingFaculty = await client.query(
+                    'SELECT id FROM users WHERE email = $1 AND role = $2',
+                    [record.email, 'faculty']
+                );
+
+                if (existingFaculty.rows.length > 0) {
+                    failedCount++;
+                    errors.push(`Faculty with email ${record.email} already exists`);
+                    continue;
+                }
+
+                // Insert new faculty member
+                await client.query(
+                    'INSERT INTO users (name, email, department, role, status) VALUES ($1, $2, $3, $4, $5)',
+                    [record.name, record.email, record.department, 'faculty', 'active']
+                );
+
+                successCount++;
+            } catch (error) {
+                failedCount++;
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                errors.push(`Failed to import ${record.email}: ${errorMessage}`);
+            }
+        }
+
+        await client.query('COMMIT');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        await client.end();
+    }
+
+    return {
+        success: successCount,
+        failed: failedCount,
+        errors
+    };
 } 

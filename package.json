@@ -11,6 +11,7 @@
   "dependencies": {
     "@types/react-select": "^5.0.0",
     "bcryptjs": "^3.0.2",
+    "javascript-lp-solver": "^0.4.24",
     "next": "15.3.4",
     "pg": "^8.16.3",
     "react": "^19.0.0",

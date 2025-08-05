@@ -160,6 +160,7 @@ export default function SchedulerPage() {
                     >
                         <option value="Greedy">🏃‍♂️ Greedy Algorithm (fast, simple, good for most cases)</option>
                         <option value="NetworkFlow">🧠 Network Flow Algorithm (optimal, best matching, slower for large data)</option>
+                        <option value="IntegerProgramming">🧮 Integer Programming Algorithm (globally optimal, respects preferences, best for complex scenarios)</option>
                     </select>
                 </div>
                 <button

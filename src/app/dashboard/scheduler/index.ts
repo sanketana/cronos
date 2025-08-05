@@ -2,6 +2,7 @@
 import { prepareMatchingInput } from './dataPreparation';
 import { GreedyScheduler } from './GreedyScheduler';
 import { NetworkFlowScheduler } from './NetworkFlowScheduler';
+import { IntegerProgrammingScheduler } from './IntegerProgrammingScheduler';
 import { saveMeetings } from './resultHandler';
 import { MatchingResult, IMatchingAlgorithm } from './IMatchingAlgorithm';
 import { Client } from 'pg';
@@ -22,6 +23,10 @@ export async function runScheduler(eventId: string, algorithm: string = 'Greedy'
     const input = await prepareMatchingInput(eventId);
     let scheduler: IMatchingAlgorithm;
     switch (algorithm) {
+        case 'IntegerProgramming':
+            console.log('[Scheduler] Using IntegerProgrammingScheduler');
+            scheduler = new IntegerProgrammingScheduler();
+            break;
         case 'NetworkFlow':
             console.log('[Scheduler] Using NetworkFlowScheduler');
             scheduler = new NetworkFlowScheduler();

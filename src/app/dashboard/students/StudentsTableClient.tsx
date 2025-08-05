@@ -2,6 +2,7 @@
 import React, { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AddEditStudentModal from './AddEditStudentModal';
+import BulkUploadStudentModal from './BulkUploadStudentModal';
 import UpdatePreferenceModal from './UpdatePreferenceModal';
 import { createStudent, updateStudent, deleteStudent } from './actions';
 
@@ -16,6 +17,7 @@ export interface Student {
 
 export default function StudentsTableClient({ students }: { students: Student[] }) {
     const [isModalOpen, setModalOpen] = useState(false);
+    const [isBulkUploadModalOpen, setBulkUploadModalOpen] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [editStudent, setEditStudent] = useState<Student | null>(null);
     const [isPreferenceModalOpen, setPreferenceModalOpen] = useState(false);
@@ -45,6 +47,10 @@ export default function StudentsTableClient({ students }: { students: Student[] 
         setEditStudent(null);
         setIsEdit(false);
         setModalOpen(true);
+    }
+
+    function handleBulkUploadClick() {
+        setBulkUploadModalOpen(true);
     }
 
     function handleEditClick(student: Student) {
@@ -80,6 +86,11 @@ export default function StudentsTableClient({ students }: { students: Student[] 
         });
     }
 
+    function handleBulkUploadSuccess() {
+        // After bulk upload, refresh the page to update student list
+        router.refresh();
+    }
+
     return (
         <div>
             <AddEditStudentModal
@@ -89,13 +100,21 @@ export default function StudentsTableClient({ students }: { students: Student[] 
                 initialValues={editStudent || {}}
                 isEdit={isEdit}
             />
+            <BulkUploadStudentModal
+                isOpen={isBulkUploadModalOpen}
+                onClose={() => setBulkUploadModalOpen(false)}
+                onSuccess={handleBulkUploadSuccess}
+            />
             <UpdatePreferenceModal
                 isOpen={isPreferenceModalOpen}
                 onClose={() => setPreferenceModalOpen(false)}
                 student={preferenceStudent || { id: '', name: '' }}
             />
             {role === 'admin' && (
-                <button className="primary-btn mb-4" onClick={handleAddClick}>+ Create New Student</button>
+                <div className="mb-4 flex">
+                    <button className="primary-btn" style={{ width: '200px', height: '44px' }} onClick={handleAddClick}>+ Create New Student</button>
+                    <button className="secondary-btn" style={{ width: '200px', height: '44px', marginLeft: '16px' }} onClick={handleBulkUploadClick}>+ Bulk Upload</button>
+                </div>
             )}
             {students.length === 0 ? (
                 <div>No students found or error loading students. Check server logs for details.</div>

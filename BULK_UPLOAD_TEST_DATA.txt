@@ -1,0 +1,5 @@
+John Doe	john.doe@university.edu	Computer Science
+Jane Smith	jane.smith@university.edu	Mathematics
+Michael Johnson	michael.johnson@university.edu	Physics
+Sarah Wilson	sarah.wilson@university.edu	Chemistry
+David Brown	david.brown@university.edu	Biology 

@@ -2,6 +2,7 @@
 import React, { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AddEditFacultyModal from './AddEditFacultyModal';
+import BulkUploadFacultyModal from './BulkUploadFacultyModal';
 import { createFaculty, updateFaculty, deleteFaculty } from './actions';
 import UpdateAvailabilityModal from './UpdateAvailabilityModal';
 
@@ -16,6 +17,7 @@ export interface Faculty {
 
 export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) {
     const [isModalOpen, setModalOpen] = useState(false);
+    const [isBulkUploadModalOpen, setBulkUploadModalOpen] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [editFaculty, setEditFaculty] = useState<Faculty | null>(null);
     const [, startTransition] = useTransition();
@@ -45,6 +47,10 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
         setEditFaculty(null);
         setIsEdit(false);
         setModalOpen(true);
+    }
+
+    function handleBulkUploadClick() {
+        setBulkUploadModalOpen(true);
     }
 
     function handleEditClick(faculty: Faculty) {
@@ -85,6 +91,11 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
         router.refresh();
     }
 
+    function handleBulkUploadSuccess() {
+        // After bulk upload, refresh the page to update faculty list
+        router.refresh();
+    }
+
     return (
         <div>
             <AddEditFacultyModal
@@ -94,6 +105,11 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
                 initialValues={editFaculty || {}}
                 isEdit={isEdit}
             />
+            <BulkUploadFacultyModal
+                isOpen={isBulkUploadModalOpen}
+                onClose={() => setBulkUploadModalOpen(false)}
+                onSuccess={handleBulkUploadSuccess}
+            />
             <UpdateAvailabilityModal
                 isOpen={isAvailabilityModalOpen}
                 onClose={() => setAvailabilityModalOpen(false)}
@@ -101,7 +117,10 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
                 onSubmit={handleAvailabilitySubmit}
             />
             {role === 'admin' && (
-                <button className="primary-btn mb-4" onClick={handleAddClick}>+ Create New Faculty</button>
+                <div className="mb-4 flex">
+                    <button className="primary-btn" style={{ width: '200px', height: '44px' }} onClick={handleAddClick}>+ Create New Faculty</button>
+                    <button className="secondary-btn" style={{ width: '200px', height: '44px', marginLeft: '16px' }} onClick={handleBulkUploadClick}>+ Bulk Upload</button>
+                </div>
             )}
             {faculty.length === 0 ? (
                 <div>No faculty found or error loading faculty. Check server logs for details.</div>
