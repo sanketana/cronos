@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { getAllEvents } from "../actions";
+import { getEventsForInputCollection } from "../actions";
 import { upsertPreference } from "./actions";
 import { getAvailableFacultyForEvent } from "../faculty/actions";
 import { getAllPreferences } from "./actions";
@@ -29,7 +29,7 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
 
     useEffect(() => {
         async function fetchData() {
-            const eventsData = await getAllEvents();
+            const eventsData = await getEventsForInputCollection();
             setEvents(eventsData);
         }
         if (isOpen) fetchData();
@@ -185,12 +185,19 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
                 {error && <div className="text-red-600 text-sm mb-2 font-semibold">{error}</div>}
                 <div className="form-group">
                     <label className="form-label">Event</label>
-                    <select className="form-input" value={eventId} onChange={e => setEventId(e.target.value)} required>
-                        <option value="">Select Event</option>
-                        {events.map(ev => (
-                            <option key={ev.id} value={ev.id}>{ev.name} ({typeof ev.date === 'string' ? ev.date.slice(0, 10) : new Date(ev.date).toISOString().slice(0, 10)})</option>
-                        ))}
-                    </select>
+                    {events.length === 0 ? (
+                        <div className="text-amber-600 bg-amber-50 border border-amber-200 rounded-md p-3 text-sm">
+                            <strong>No events available for input collection.</strong><br />
+                            Events must be in "Collecting Inputs" status for students to provide preferences.
+                        </div>
+                    ) : (
+                        <select className="form-input" value={eventId} onChange={e => setEventId(e.target.value)} required>
+                            <option value="">Select Event</option>
+                            {events.map(ev => (
+                                <option key={ev.id} value={ev.id}>{ev.name} ({typeof ev.date === 'string' ? ev.date.slice(0, 10) : new Date(ev.date).toISOString().slice(0, 10)})</option>
+                            ))}
+                        </select>
+                    )}
                 </div>
                 <div className="tabs flex mb-4">
                     <button

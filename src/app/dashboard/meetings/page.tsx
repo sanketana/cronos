@@ -29,7 +29,7 @@ async function getMeetings(user: User, latestRunId: number | null) {
             JOIN events e ON m.event_id = e.id
             JOIN users u1 ON m.faculty_id = u1.id
             JOIN users u2 ON m.student_id = u2.id
-            WHERE m.student_id = $1 AND m.run_id = $2
+            WHERE m.student_id = $1 AND m.run_id = $2 AND e.status = 'PUBLISHED'
             ORDER BY m.start_time, m.event_id
         `, [user.userId || user.id, latestRunId]);
     } else if (user && user.role === 'student') {
@@ -39,7 +39,7 @@ async function getMeetings(user: User, latestRunId: number | null) {
             JOIN events e ON m.event_id = e.id
             JOIN users u1 ON m.faculty_id = u1.id
             JOIN users u2 ON m.student_id = u2.id
-            WHERE m.student_id = $1
+            WHERE m.student_id = $1 AND e.status = 'PUBLISHED'
             ORDER BY m.start_time, m.event_id
         `, [user.userId || user.id]);
     } else if (user && user.role === 'faculty' && latestRunId) {
@@ -49,7 +49,7 @@ async function getMeetings(user: User, latestRunId: number | null) {
             JOIN events e ON m.event_id = e.id
             JOIN users u1 ON m.faculty_id = u1.id
             JOIN users u2 ON m.student_id = u2.id
-            WHERE m.faculty_id = $1 AND m.run_id = $2
+            WHERE m.faculty_id = $1 AND m.run_id = $2 AND e.status = 'PUBLISHED'
             ORDER BY m.start_time, m.event_id
         `, [user.userId || user.id, latestRunId]);
     } else if (user && user.role === 'faculty') {
@@ -59,7 +59,7 @@ async function getMeetings(user: User, latestRunId: number | null) {
             JOIN events e ON m.event_id = e.id
             JOIN users u1 ON m.faculty_id = u1.id
             JOIN users u2 ON m.student_id = u2.id
-            WHERE m.faculty_id = $1
+            WHERE m.faculty_id = $1 AND e.status = 'PUBLISHED'
             ORDER BY m.start_time, m.event_id
         `, [user.userId || user.id]);
     } else {
@@ -102,13 +102,20 @@ async function getStudents() {
     return result.rows;
 }
 
-async function getEvents() {
+async function getEvents(user: User) {
     const client = new Client({
         connectionString: process.env.NEON_POSTGRES_URL,
         ssl: { rejectUnauthorized: false }
     });
     await client.connect();
-    const result = await client.query('SELECT id, name FROM events');
+    let result;
+    if (user && (user.role === 'faculty' || user.role === 'student')) {
+        // Faculty and students can only see published events
+        result = await client.query('SELECT id, name FROM events WHERE status = $1', ['PUBLISHED']);
+    } else {
+        // Admins can see all events
+        result = await client.query('SELECT id, name FROM events');
+    }
     await client.end();
     return result.rows;
 }
@@ -132,7 +139,7 @@ export default async function MeetingsPage() {
         getMeetings(user, latestRunId),
         getProfessors(),
         getStudents(),
-        getEvents()
+        getEvents(user)
     ]);
     return <MeetingsTabsClient meetings={meetings} professors={professors} students={students} events={events} runs={runs} />;
 } 

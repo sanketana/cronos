@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getAllEvents } from "../actions";
+import { getEventsForScheduling } from "../actions";
 import { getAllAvailabilities } from "../faculty/actions";
 import { getAllPreferences } from "../students/actions";
 import { runSchedulerAction } from './actions';
@@ -28,7 +28,7 @@ export default function SchedulerPage() {
         async function fetchData() {
             setLoadingData(true);
             const [eventsData, availabilities, preferences] = await Promise.all([
-                getAllEvents(),
+                getEventsForScheduling(),
                 getAllAvailabilities(),
                 getAllPreferences(),
             ]);
@@ -132,6 +132,11 @@ export default function SchedulerPage() {
                     <label className="block mb-2 font-medium">Select Event</label>
                     {loadingData ? (
                         <div className="text-gray-500">Loading events...</div>
+                    ) : events.length === 0 ? (
+                        <div className="text-amber-600 bg-amber-50 border border-amber-200 rounded-md p-3 text-sm">
+                            <strong>No events available for scheduling.</strong><br />
+                            Events must be in "Scheduling" status to run the scheduler.
+                        </div>
                     ) : (
                         <select
                             className="form-input w-full max-w-md"

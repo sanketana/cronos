@@ -4,18 +4,19 @@ import Link from 'next/link';
 import './dashboard-sidebar.css';
 
 const allSidebarItems = [
-    { label: 'Dashboard Home', href: '/dashboard', roles: ['admin', 'faculty', 'student'] },
-    { label: 'Events', href: '/dashboard/events', roles: ['admin'] },
-    { label: 'Faculty', href: '/dashboard/faculty', roles: ['admin'] },
-    { label: 'Students', href: '/dashboard/students', roles: ['admin'] },
-    { label: 'Scheduler', href: '/dashboard/scheduler', roles: ['admin'] },
+    { label: 'Dashboard Home', href: '/dashboard', roles: ['admin', 'superadmin', 'faculty', 'student'] },
+    { label: 'Events', href: '/dashboard/events', roles: ['admin', 'superadmin'] },
+    { label: 'Faculty', href: '/dashboard/faculty', roles: ['admin', 'superadmin'] },
+    { label: 'Students', href: '/dashboard/students', roles: ['admin', 'superadmin'] },
+    { label: 'Scheduler', href: '/dashboard/scheduler', roles: ['admin', 'superadmin'] },
     // Self-serve links for faculty and students
     { label: 'My Availability', href: '/dashboard/faculty', roles: ['faculty'] },
     { label: 'Meetings', href: '/dashboard/meetings', roles: ['faculty'] },
     { label: 'My Preferences', href: '/dashboard/students', roles: ['student'] },
     { label: 'Meetings', href: '/dashboard/meetings', roles: ['student'] },
-    { label: 'Meetings', href: '/dashboard/meetings', roles: ['admin'] },
-    { label: 'Housekeeping', href: '/dashboard/housekeeping', roles: ['admin'] },
+    { label: 'Meetings', href: '/dashboard/meetings', roles: ['admin', 'superadmin'] },
+    { label: 'Administration', href: '/dashboard/administration', roles: ['superadmin'] },
+    { label: 'Housekeeping', href: '/dashboard/housekeeping', roles: ['admin', 'superadmin'] },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

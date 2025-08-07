@@ -36,8 +36,8 @@ export default function LoginPage() {
                 router.push("/set-password");
             } else {
                 // Redirect based on role
-                if (data.role === "admin") router.push("/dashboard");
-                else if (data.role === "professor") router.push("/dashboard/faculty");
+                if (data.role === "superadmin" || data.role === "admin") router.push("/dashboard");
+                else if (data.role === "faculty") router.push("/dashboard/faculty");
                 else if (data.role === "student") router.push("/dashboard/students");
                 else router.push("/dashboard");
             }

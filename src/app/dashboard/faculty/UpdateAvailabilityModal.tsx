@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { getAllEvents } from "../actions";
+import { getEventsForInputCollection } from "../actions";
 import { upsertAvailability, getAllAvailabilitiesForFaculty } from "./actions";
 
 interface Props {
@@ -72,10 +72,10 @@ export default function UpdateAvailabilityModal({ isOpen, onClose, faculty, onSu
     const [availableSlots, setAvailableSlots] = useState<string[]>([]);
     const selectAllRef = useRef<HTMLInputElement>(null);
 
-    // Prefetch all events on mount (not just when modal opens)
+    // Prefetch events that are collecting inputs on mount (not just when modal opens)
     useEffect(() => {
         async function fetchEvents() {
-            const eventsData = await getAllEvents();
+            const eventsData = await getEventsForInputCollection();
             setEvents(eventsData);
         }
         fetchEvents();
@@ -168,17 +168,24 @@ export default function UpdateAvailabilityModal({ isOpen, onClose, faculty, onSu
                 <div className="space-y-4">
                     <div className="form-group">
                         <label className="form-label font-bold">Select Event</label>
-                        <select className="form-input rounded-md border-gray-300 focus:border-nw-purple focus:ring-nw-purple" value={eventId} onChange={e => setEventId(e.target.value)} required>
-                            <option value="">Select Event</option>
-                            {(events as unknown[]).map(ev => {
-                                const event = ev as { id: string; name: string; date?: string };
-                                return (
-                                    <option key={event.id} value={event.id}>
-                                        {event.name} ({event.date ? (typeof event.date === 'string' ? event.date.slice(0, 10) : new Date(event.date).toISOString().slice(0, 10)) : ""})
-                                    </option>
-                                );
-                            })}
-                        </select>
+                        {events.length === 0 ? (
+                            <div className="text-amber-600 bg-amber-50 border border-amber-200 rounded-md p-3 text-sm">
+                                <strong>No events available for input collection.</strong><br />
+                                Events must be in "Collecting Inputs" status for faculty to provide availability.
+                            </div>
+                        ) : (
+                            <select className="form-input rounded-md border-gray-300 focus:border-nw-purple focus:ring-nw-purple" value={eventId} onChange={e => setEventId(e.target.value)} required>
+                                <option value="">Select Event</option>
+                                {(events as unknown[]).map(ev => {
+                                    const event = ev as { id: string; name: string; date?: string };
+                                    return (
+                                        <option key={event.id} value={event.id}>
+                                            {event.name} ({event.date ? (typeof event.date === 'string' ? event.date.slice(0, 10) : new Date(event.date).toISOString().slice(0, 10)) : ""})
+                                        </option>
+                                    );
+                                })}
+                            </select>
+                        )}
                     </div>
                     {eventId && (
                         <>
