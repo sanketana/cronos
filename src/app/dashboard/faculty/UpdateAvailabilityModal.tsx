@@ -171,7 +171,7 @@ export default function UpdateAvailabilityModal({ isOpen, onClose, faculty, onSu
                         {events.length === 0 ? (
                             <div className="text-amber-600 bg-amber-50 border border-amber-200 rounded-md p-3 text-sm">
                                 <strong>No events available for input collection.</strong><br />
-                                Events must be in "Collecting Inputs" status for faculty to provide availability.
+                                Events must be in &quot;Collecting Inputs&quot; status for faculty to provide availability.
                             </div>
                         ) : (
                             <select className="form-input rounded-md border-gray-300 focus:border-nw-purple focus:ring-nw-purple" value={eventId} onChange={e => setEventId(e.target.value)} required>

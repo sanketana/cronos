@@ -188,7 +188,7 @@ export default function UpdatePreferenceModal({ isOpen, onClose, student }: Prop
                     {events.length === 0 ? (
                         <div className="text-amber-600 bg-amber-50 border border-amber-200 rounded-md p-3 text-sm">
                             <strong>No events available for input collection.</strong><br />
-                            Events must be in "Collecting Inputs" status for students to provide preferences.
+                            Events must be in &quot;Collecting Inputs&quot; status for students to provide preferences.
                         </div>
                     ) : (
                         <select className="form-input" value={eventId} onChange={e => setEventId(e.target.value)} required>

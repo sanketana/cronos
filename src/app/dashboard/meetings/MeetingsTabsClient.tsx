@@ -169,7 +169,7 @@ export default function MeetingsTabsClient({ meetings, professors, students, eve
                                         {meetings.length === 0 ? (
                                             <div className="text-amber-600 bg-amber-50 border border-amber-200 rounded-md p-3 text-sm text-center">
                                                 <strong>No meetings available.</strong><br />
-                                                Meetings are only visible for events that are in "Published" status.
+                                                Meetings are only visible for events that are in &quot;Published&quot; status.
                                             </div>
                                         ) : (
                                             <div className="text-gray-500 text-center">No meetings match the selected filters.</div>

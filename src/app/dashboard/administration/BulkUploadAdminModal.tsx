@@ -51,7 +51,7 @@ export default function BulkUploadAdminModal({ onClose, isPending }: BulkUploadA
 
             const records = lines.slice(1).map(line => {
                 const values = line.split(',').map(v => v.trim());
-                const record: any = {};
+                const record: Record<string, string> = {};
                 headers.forEach((header, index) => {
                     record[header] = values[index] || '';
                 });

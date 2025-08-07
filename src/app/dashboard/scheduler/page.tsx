@@ -135,7 +135,7 @@ export default function SchedulerPage() {
                     ) : events.length === 0 ? (
                         <div className="text-amber-600 bg-amber-50 border border-amber-200 rounded-md p-3 text-sm">
                             <strong>No events available for scheduling.</strong><br />
-                            Events must be in "Scheduling" status to run the scheduler.
+                            Events must be in &quot;Scheduling&quot; status to run the scheduler.
                         </div>
                     ) : (
                         <select
