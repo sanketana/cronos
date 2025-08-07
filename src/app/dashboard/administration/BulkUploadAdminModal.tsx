@@ -56,7 +56,12 @@ export default function BulkUploadAdminModal({ onClose, isPending }: BulkUploadA
                     record[header] = values[index] || '';
                 });
                 return record;
-            }).filter(record => record.name && record.email);
+            }).filter(record => record.name && record.email)
+            .map(record => ({
+                name: record.name,
+                email: record.email,
+                department: record.department || ''
+            }));
 
             if (records.length === 0) {
                 alert('No valid records found in CSV file');
