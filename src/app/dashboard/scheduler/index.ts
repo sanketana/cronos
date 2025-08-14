@@ -1,13 +1,12 @@
 'use server';
 import { prepareMatchingInput } from './dataPreparation';
 import { GreedyScheduler } from './GreedyScheduler';
-import { NetworkFlowScheduler } from './NetworkFlowScheduler';
-import { IntegerProgrammingScheduler } from './IntegerProgrammingScheduler';
+import { CustomIntegerProgrammingScheduler } from './CustomIntegerProgrammingScheduler';
 import { saveMeetings } from './resultHandler';
 import { MatchingResult, IMatchingAlgorithm } from './IMatchingAlgorithm';
 import { Client } from 'pg';
 
-export async function runScheduler(eventId: string, algorithm: string = 'Greedy'): Promise<MatchingResult> {
+export async function runScheduler(eventId: string, algorithm: string = 'CustomIntegerProgramming'): Promise<MatchingResult> {
     console.log(`[Scheduler] Triggered for eventId=${eventId}, algorithm=${algorithm}`);
     // Insert a new scheduler_runs row
     const client = new Client({ connectionString: process.env.NEON_POSTGRES_URL });
@@ -23,18 +22,17 @@ export async function runScheduler(eventId: string, algorithm: string = 'Greedy'
     const input = await prepareMatchingInput(eventId);
     let scheduler: IMatchingAlgorithm;
     switch (algorithm) {
-        case 'IntegerProgramming':
-            console.log('[Scheduler] Using IntegerProgrammingScheduler');
-            scheduler = new IntegerProgrammingScheduler();
-            break;
-        case 'NetworkFlow':
-            console.log('[Scheduler] Using NetworkFlowScheduler');
-            scheduler = new NetworkFlowScheduler();
+        case 'CustomIntegerProgramming':
+            console.log('[Scheduler] Using CustomIntegerProgrammingScheduler');
+            scheduler = new CustomIntegerProgrammingScheduler();
             break;
         case 'Greedy':
-        default:
             console.log('[Scheduler] Using GreedyScheduler');
             scheduler = new GreedyScheduler();
+            break;
+        default:
+            console.log('[Scheduler] Using CustomIntegerProgrammingScheduler (default)');
+            scheduler = new CustomIntegerProgrammingScheduler();
             break;
     }
     console.log('[Scheduler] Computing matches...');

@@ -21,7 +21,7 @@ export default function SchedulerPage() {
     const [loadingData, setLoadingData] = useState(true);
     const [scheduling, setScheduling] = useState(false); // NEW: scheduling state
     const [result, setResult] = useState<SchedulerResult | null>(null); // Store full result object
-    const [selectedAlgorithm, setSelectedAlgorithm] = useState('Greedy');
+    const [selectedAlgorithm, setSelectedAlgorithm] = useState('CustomIntegerProgramming');
     const [logs, setLogs] = useState<string[]>([]); // For user-friendly logs
 
     useEffect(() => {
@@ -163,9 +163,8 @@ export default function SchedulerPage() {
                         value={selectedAlgorithm}
                         onChange={e => setSelectedAlgorithm(e.target.value)}
                     >
+                        <option value="CustomIntegerProgramming">🧮 Integer Programming Algorithm (globally optimal, respects preferences, reliable for all input sizes)</option>
                         <option value="Greedy">🏃‍♂️ Greedy Algorithm (fast, simple, good for most cases)</option>
-                        <option value="NetworkFlow">🧠 Network Flow Algorithm (optimal, best matching, slower for large data)</option>
-                        <option value="IntegerProgramming">🧮 Integer Programming Algorithm (globally optimal, respects preferences, best for complex scenarios)</option>
                     </select>
                 </div>
                 <button
