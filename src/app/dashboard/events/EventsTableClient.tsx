@@ -52,6 +52,33 @@ export default function EventsTableClient({ events }: { events: Event[] }) {
                     submitLabel="Update"
                 />
             )}
+            
+            {/* Event Lifecycle Information */}
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h3 className="text-lg font-semibold text-blue-800 mb-4">📋 Event Lifecycle</h3>
+                <div className="space-y-2 text-sm text-blue-700">
+                    <div className="flex items-center gap-2">
+                        <span className="font-semibold text-blue-800">CREATED</span>
+                        <span className="text-blue-600">→ Event is created and configured</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="font-semibold text-blue-800">COLLECTING_AVAIL</span>
+                        <span className="text-blue-600">→ Faculty and students submit availability</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="font-semibold text-blue-800">SCHEDULING</span>
+                        <span className="text-blue-600">→ Algorithm runs to create meetings</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="font-semibold text-green-700">PUBLISHED</span>
+                        <span className="text-green-600">→ Meetings are visible to participants</span>
+                    </div>
+                </div>
+                <p className="text-xs text-blue-600 mt-3 italic">
+                    💡 Tip: Use the &quot;Edit&quot; button to change an event&apos;s status and move it through the lifecycle
+                </p>
+            </div>
+            
             {events.length === 0 ? (
                 <div>No events found or error loading events. Check server logs for details.</div>
             ) : (
@@ -70,7 +97,7 @@ export default function EventsTableClient({ events }: { events: Event[] }) {
                     <tbody>
                         {events.map((event: Event) => {
                             let dateStr = '';
-                            const dateForEdit = (event.date && event.date.length >= 10) ? event.date.slice(0, 10) : '';
+                            // Format date for display
                             try {
                                 const dateObj = new Date(event.date ?? '');
                                 dateStr = isNaN(dateObj.getTime())
@@ -79,6 +106,24 @@ export default function EventsTableClient({ events }: { events: Event[] }) {
                             } catch {
                                 dateStr = String(event.date);
                             }
+                            
+                            // Format date for edit (YYYY-MM-DD format for HTML date input)
+                            let dateForEdit = '';
+                            try {
+                                const dateObj = new Date(event.date ?? '');
+                                if (!isNaN(dateObj.getTime())) {
+                                    // Use local date methods to avoid timezone issues
+                                    const year = dateObj.getFullYear();
+                                    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                                    const day = String(dateObj.getDate()).padStart(2, '0');
+                                    dateForEdit = `${year}-${month}-${day}`;
+                                } else {
+                                    dateForEdit = event.date || '';
+                                }
+                            } catch {
+                                dateForEdit = event.date || '';
+                            }
+                            
                             return (
                                 <tr key={event.id}>
                                     <td>{event.name}</td>

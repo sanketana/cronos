@@ -112,21 +112,33 @@ export default function MeetingsTabsClient({ meetings, professors, students, eve
 
     async function handleDelete(id: string) {
         if (!window.confirm('Are you sure you want to delete this meeting?')) return;
-        await deleteMeeting(id);
+        const result = await deleteMeeting(id);
+        if (result?.error) {
+            alert('Error deleting meeting: ' + result.error);
+            return;
+        }
         startTransition(() => {
             router.refresh();
         });
     }
 
     async function handleCreate(formData: FormData) {
-        await createMeeting(formData);
+        const result = await createMeeting(formData);
+        if (result?.error) {
+            alert('Error creating meeting: ' + result.error);
+            return;
+        }
         startTransition(() => {
             router.refresh();
         });
     }
 
     async function handleEdit(formData: FormData) {
-        await updateMeeting(formData);
+        const result = await updateMeeting(formData);
+        if (result?.error) {
+            alert('Error updating meeting: ' + result.error);
+            return;
+        }
         startTransition(() => {
             router.refresh();
         });

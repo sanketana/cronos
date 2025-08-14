@@ -27,6 +27,8 @@ export default function EventModal({ isOpen, onClose, onSubmit, initialValues, s
         }
     }, [isOpen]);
 
+
+
     if (!isOpen) return null;
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
