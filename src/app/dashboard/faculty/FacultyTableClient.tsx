@@ -116,7 +116,7 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
                 faculty={availabilityFaculty || { id: '', name: '' }}
                 onSubmit={handleAvailabilitySubmit}
             />
-            {role === 'admin' && (
+            {(role === 'admin' || role === 'superadmin') && (
                 <div className="mb-4 flex">
                     <button className="primary-btn" style={{ width: '200px', height: '44px' }} onClick={handleAddClick}>+ Create New Faculty</button>
                     <button className="secondary-btn" style={{ width: '200px', height: '44px', marginLeft: '16px' }} onClick={handleBulkUploadClick}>+ Bulk Upload</button>
@@ -145,7 +145,7 @@ export default function FacultyTableClient({ faculty }: { faculty: Faculty[] }) 
                                     <td>{f.status}</td>
                                     <td>
                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                            {role === 'admin' ? (
+                                            {(role === 'admin' || role === 'superadmin') ? (
                                                 <>
                                                     <button className="secondary-btn" onClick={() => handleEditClick(f)}>Edit</button>
                                                     <button className="secondary-btn" onClick={() => handleUpdateAvailabilityClick(f)}>

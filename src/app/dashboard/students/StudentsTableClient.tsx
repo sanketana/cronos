@@ -110,7 +110,7 @@ export default function StudentsTableClient({ students }: { students: Student[] 
                 onClose={() => setPreferenceModalOpen(false)}
                 student={preferenceStudent || { id: '', name: '' }}
             />
-            {role === 'admin' && (
+            {(role === 'admin' || role === 'superadmin') && (
                 <div className="mb-4 flex">
                     <button className="primary-btn" style={{ width: '200px', height: '44px' }} onClick={handleAddClick}>+ Create New Student</button>
                     <button className="secondary-btn" style={{ width: '200px', height: '44px', marginLeft: '16px' }} onClick={handleBulkUploadClick}>+ Bulk Upload</button>
@@ -138,7 +138,7 @@ export default function StudentsTableClient({ students }: { students: Student[] 
                                     <td>{s.department || '-'}</td>
                                     <td>{s.status}</td>
                                     <td>
-                                        {role === 'admin' ? (
+                                        {(role === 'admin' || role === 'superadmin') ? (
                                             <>
                                                 <button className="secondary-btn" style={{ marginRight: '0.5rem' }} onClick={() => handleEditClick(s)}>Edit</button>
                                                 <button className="secondary-btn" style={{ marginRight: '0.5rem' }} onClick={() => handlePreferenceClick(s)}>Update Preferences</button>

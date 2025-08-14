@@ -1,5 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useTransition, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import AddEditMeetingModal from './AddEditMeetingModal';
+import { createMeeting, updateMeeting, deleteMeeting } from './actions';
 
 interface Meeting {
     id: string;
@@ -12,6 +15,7 @@ interface Meeting {
     student_name: string;
     start_time?: string;
     end_time?: string;
+    source?: string;
     // ...other fields
     professor_id?: string;
     professor_name?: string;
@@ -34,6 +38,13 @@ export default function MeetingsTabsClient({ meetings, professors, students, eve
     events: Event[];
     runs: RunMeta[];
 }) {
+    const [isModalOpen, setModalOpen] = useState(false);
+    const [isEdit, setIsEdit] = useState(false);
+    const [editMeeting, setEditMeeting] = useState<Meeting | null>(null);
+    const [, startTransition] = useTransition();
+    const router = useRouter();
+    const [role, setRole] = useState<string | null>(null);
+
     // Single-select filter state
     const [runIdFilter, setRunIdFilter] = useState('');
     const [eventFilter, setEventFilter] = useState('');
@@ -41,6 +52,20 @@ export default function MeetingsTabsClient({ meetings, professors, students, eve
     const [studentFilter, setStudentFilter] = useState('');
     const [dateFilter, setDateFilter] = useState('');
     const [slotFilter, setSlotFilter] = useState('');
+
+    useEffect(() => {
+        async function fetchRole() {
+            try {
+                const res = await fetch('/api/auth/me');
+                if (!res.ok) throw new Error('Not authenticated');
+                const data = await res.json();
+                setRole(data.role);
+            } catch {
+                setRole(null);
+            }
+        }
+        fetchRole();
+    }, []);
 
     // Helper to format date and slot
     function formatDate(dateStr?: string) {
@@ -73,6 +98,40 @@ export default function MeetingsTabsClient({ meetings, professors, students, eve
         return runMatch && eventMatch && facultyMatch && studentMatch && dateMatch && slotMatch;
     });
 
+    function handleAddClick() {
+        setEditMeeting(null);
+        setIsEdit(false);
+        setModalOpen(true);
+    }
+
+    function handleEditClick(meeting: Meeting) {
+        setEditMeeting(meeting);
+        setIsEdit(true);
+        setModalOpen(true);
+    }
+
+    async function handleDelete(id: string) {
+        if (!window.confirm('Are you sure you want to delete this meeting?')) return;
+        await deleteMeeting(id);
+        startTransition(() => {
+            router.refresh();
+        });
+    }
+
+    async function handleCreate(formData: FormData) {
+        await createMeeting(formData);
+        startTransition(() => {
+            router.refresh();
+        });
+    }
+
+    async function handleEdit(formData: FormData) {
+        await updateMeeting(formData);
+        startTransition(() => {
+            router.refresh();
+        });
+    }
+
     function handleExportExcel() {
         const exportData = filteredMeetings.map(m => ({
             Event: m.event_name,
@@ -99,13 +158,31 @@ export default function MeetingsTabsClient({ meetings, professors, students, eve
 
     return (
         <div>
+            <AddEditMeetingModal
+                isOpen={isModalOpen}
+                onClose={() => setModalOpen(false)}
+                onSubmit={isEdit ? handleEdit : handleCreate}
+                initialValues={editMeeting || {}}
+                isEdit={isEdit}
+                events={events}
+                professors={professors}
+                students={students}
+            />
             <h1 className="dashboard-title">Meetings</h1>
-            <button
-                className="primary-btn export-btn"
-                onClick={handleExportExcel}
-            >
-                Export as Excel
-            </button>
+            <div className="mb-4 flex">
+                {(role === 'admin' || role === 'superadmin') && (
+                    <button className="primary-btn" style={{ width: '200px', height: '44px' }} onClick={handleAddClick}>
+                        + Create New Meeting
+                    </button>
+                )}
+                <button
+                    className="secondary-btn"
+                    style={{ width: '200px', height: '44px', marginLeft: '16px' }}
+                    onClick={handleExportExcel}
+                >
+                    Export as Excel
+                </button>
+            </div>
             <div style={{ marginTop: '1.5rem' }}>
                 <div>
                     <table className="events-table">
@@ -161,12 +238,15 @@ export default function MeetingsTabsClient({ meetings, professors, students, eve
                                         ))}
                                     </select>
                                 </th>
+                                {(role === 'admin' || role === 'superadmin') && (
+                                    <th>Actions</th>
+                                )}
                             </tr>
                         </thead>
                         <tbody>
                             {filteredMeetings.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6}>
+                                    <td colSpan={(role === 'admin' || role === 'superadmin') ? 7 : 6}>
                                         {meetings.length === 0 ? (
                                             <div className="text-amber-600 bg-amber-50 border border-amber-200 rounded-md p-3 text-sm text-center">
                                                 <strong>No meetings available.</strong><br />
@@ -186,6 +266,14 @@ export default function MeetingsTabsClient({ meetings, professors, students, eve
                                         <td>{m.student_name}</td>
                                         <td>{formatDate(m.start_time)}</td>
                                         <td>{formatSlot(m.start_time, m.end_time)}</td>
+                                        {(role === 'admin' || role === 'superadmin') && (
+                                            <td>
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <button className="secondary-btn" onClick={() => handleEditClick(m)}>Edit</button>
+                                                    <button className="danger-btn" onClick={() => handleDelete(m.id)}>Delete</button>
+                                                </div>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))
                             )}
